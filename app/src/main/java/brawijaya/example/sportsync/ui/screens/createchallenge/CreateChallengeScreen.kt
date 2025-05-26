@@ -1,4 +1,4 @@
-package brawijaya.example.sportsync.ui.screens.creatematch
+package brawijaya.example.sportsync.ui.screens.createchallenge
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -54,13 +54,13 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalContext
-import brawijaya.example.sportsync.ui.screens.creatematch.components.GenderTypeSwitch
+import brawijaya.example.sportsync.ui.screens.createchallenge.components.GenderTypeSwitch
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
-fun CreateMatchScreen(
+fun CreateChallengeScreen(
     navController: NavController
 ) {
     Scaffold(
@@ -91,7 +91,7 @@ fun CreateMatchScreen(
                         )
                     }
                     Text(
-                        text = "Find Your Opponent",
+                        text = "Create Challenge",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -123,13 +123,13 @@ fun CreateMatchScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            CreateMatchContent()
+            CreateChallengeContent()
         }
     }
 }
 
 @Composable
-fun CreateMatchContent() {
+fun CreateChallengeContent() {
     var challengeDeclaration by remember { mutableStateOf("") }
     var sportCategory by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf("Man") }

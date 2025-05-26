@@ -1,4 +1,4 @@
-package brawijaya.example.sportsync.ui.screens.creatematch.components
+package brawijaya.example.sportsync.ui.screens.createchallenge.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

@@ -176,7 +176,7 @@ fun FindMatchContent(
             contentAlignment = Alignment.BottomEnd
         ) {
             FloatingActionButton(
-                onClick = { navController.navigate(Screen.CreateMatch.route) },
+                onClick = { navController.navigate(Screen.CreateChallenge.route) },
                 containerColor = Color(0xFFFBBB46),
                 modifier = Modifier.size(64.dp).clip(CircleShape)
             ) {
