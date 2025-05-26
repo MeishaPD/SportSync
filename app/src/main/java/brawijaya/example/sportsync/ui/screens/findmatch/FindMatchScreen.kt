@@ -123,14 +123,18 @@ fun FindMatchScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            FindMatchContent()
+            FindMatchContent(
+                navController = navController
+            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FindMatchContent() {
+fun FindMatchContent(
+    navController: NavController
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -172,7 +176,7 @@ fun FindMatchContent() {
             contentAlignment = Alignment.BottomEnd
         ) {
             FloatingActionButton(
-                onClick = { },
+                onClick = { navController.navigate(Screen.CreateMatch.route) },
                 containerColor = Color(0xFFFBBB46),
                 modifier = Modifier.size(64.dp).clip(CircleShape)
             ) {
