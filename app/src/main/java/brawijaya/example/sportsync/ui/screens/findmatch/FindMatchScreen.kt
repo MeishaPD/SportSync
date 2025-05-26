@@ -157,7 +157,8 @@ fun FindMatchContent(
             title = "Main Santai Bang",
             organizer = "By Alex Turner",
             status = "Tunggal Pria",
-            sportIcon = R.drawable.julius_caesar
+            sportIcon = R.drawable.julius_caesar,
+            onClick = { navController.navigate(Screen.DetailChallenge.route)}
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -166,7 +167,8 @@ fun FindMatchContent(
             title = "Cari Lawan 2v2",
             organizer = "By Alex Turner",
             status = "Ganda Pria",
-            sportIcon = R.drawable.julius_caesar
+            sportIcon = R.drawable.julius_caesar,
+            onClick = { navController.navigate(Screen.DetailChallenge.route)}
         )
 
         Spacer(modifier = Modifier.weight(1f))

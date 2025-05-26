@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import brawijaya.example.sportsync.ui.screens.auth.AuthScreen
 import brawijaya.example.sportsync.ui.screens.createchallenge.CreateChallengeScreen
+import brawijaya.example.sportsync.ui.screens.detailchallenge.DetailChallengeScreen
 import brawijaya.example.sportsync.ui.screens.findmatch.FindMatchScreen
 import brawijaya.example.sportsync.ui.screens.gamezone.GameZoneScreen
 import brawijaya.example.sportsync.ui.screens.home.HomeScreen
@@ -17,6 +18,7 @@ sealed class Screen(val route: String) {
     object GameZone: Screen("gamezone")
     object FindMatch: Screen("find_match")
     object CreateChallenge: Screen("create_challenge")
+    object DetailChallenge: Screen("detail_challenge")
 }
 
 @Composable
@@ -39,6 +41,9 @@ fun AppNavigation(navController: NavHostController) {
         }
         composable(Screen.CreateChallenge.route) {
             CreateChallengeScreen(navController = navController)
+        }
+        composable(Screen.DetailChallenge.route) {
+            DetailChallengeScreen(navController = navController)
         }
     }
 }

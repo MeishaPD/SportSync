@@ -1,6 +1,7 @@
 package brawijaya.example.sportsync.ui.screens.findmatch.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,12 +22,14 @@ fun ChallengeCard(
     title: String,
     organizer: String,
     status: String,
-    sportIcon: Int
+    sportIcon: Int,
+    onClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp),
+            .height(80.dp)
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFFCCD78)
         ),

@@ -78,7 +78,7 @@ fun CreateChallengeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = { },
+                        onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .size(32.dp)
                             .background(Color.White, CircleShape)
