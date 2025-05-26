@@ -102,8 +102,8 @@ fun BottomNavigation(
                 BottomNavItem(
                     painterRes = R.drawable.ic_teamup,
                     label = "TeamUp",
-                    isSelected = false,
-                    onClick = { }
+                    isSelected =  currentRoute == Screen.FindMatch.route,
+                    onClick = { onNavigate(Screen.FindMatch.route) }
                 )
                 BottomNavItem(
                     painterRes = R.drawable.ic_court,
