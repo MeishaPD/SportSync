@@ -14,6 +14,7 @@ import brawijaya.example.sportsync.ui.screens.findcourt.FindCourtScreen
 import brawijaya.example.sportsync.ui.screens.findmatch.FindMatchScreen
 import brawijaya.example.sportsync.ui.screens.gamezone.GameZoneScreen
 import brawijaya.example.sportsync.ui.screens.home.HomeScreen
+import brawijaya.example.sportsync.ui.screens.onboarding.OnBoardingScreen
 import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
 import brawijaya.example.sportsync.ui.screens.paymentdetail.PaymentDetailScreen
 import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScreen
@@ -81,8 +82,11 @@ sealed class Screen(val route: String) {
 fun AppNavigation(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Auth.route
+        startDestination = Screen.Onboarding.route
     ) {
+        composable(Screen.Onboarding.route) {
+            OnBoardingScreen(navController = navController)
+        }
         composable(Screen.Auth.route) {
             AuthScreen(navController = navController)
         }
