@@ -1,4 +1,4 @@
-package brawijaya.example.sportsync.ui.screens.findmatch.components
+package brawijaya.example.sportsync.ui.screens.findcourt.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +21,7 @@ import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.ui.components.FilterChip
 
 @Composable
-fun SportCategoryFilters() {
+fun CourtCategoryFilters() {
     val categories = listOf("Badminton", "Soccer", "Mini Soccer")
     var selectedCategory by remember { mutableStateOf("Badminton") }
 
