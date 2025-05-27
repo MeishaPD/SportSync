@@ -1,4 +1,5 @@
-package brawijaya.example.sportsync.ui.screens.bookcourt
+// Updated PaymentScreen.kt
+package brawijaya.example.sportsync.ui.screens.payment
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,13 +23,20 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
-import brawijaya.example.sportsync.ui.screens.bookcourt.components.BookCourtContent
+import brawijaya.example.sportsync.ui.screens.payment.components.PaymentContent
+import brawijaya.example.sportsync.ui.viewmodels.PaymentType
+import brawijaya.example.sportsync.data.models.BookingItem
+import brawijaya.example.sportsync.data.models.CourtData
 
 @Composable
-fun BookCourtScreen(
+fun PaymentScreen(
     navController: NavController,
-    courtName: String,
-    timeSlot: String? = null
+    courtName: String = "",
+    selectedDate: String = "",
+    paymentType: PaymentType = PaymentType.FULL,
+    totalAmount: Int = 0,
+    selectedTimeSlots: List<BookingItem> = emptyList(),
+    courtData: CourtData? = null
 ) {
     Scaffold(
         topBar = {
@@ -45,7 +53,7 @@ fun BookCourtScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Review Order",
+                        text = "Payment",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -72,10 +80,13 @@ fun BookCourtScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            BookCourtContent(
-                navController = navController,
+            PaymentContent(
+                totalAmount = totalAmount,
                 courtName = courtName,
-                initialTimeSlot = timeSlot
+                selectedTimeSlots = selectedTimeSlots,
+                selectedDate = selectedDate,
+                paymentType = paymentType,
+                courtData = courtData
             )
         }
     }

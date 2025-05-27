@@ -14,7 +14,10 @@ import brawijaya.example.sportsync.ui.screens.findcourt.FindCourtScreen
 import brawijaya.example.sportsync.ui.screens.findmatch.FindMatchScreen
 import brawijaya.example.sportsync.ui.screens.gamezone.GameZoneScreen
 import brawijaya.example.sportsync.ui.screens.home.HomeScreen
-import java.net.URLDecoder
+import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
+import brawijaya.example.sportsync.utils.NavigationUtils.parseBookCourtParams
+import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 sealed class Screen(val route: String) {
@@ -33,6 +36,27 @@ sealed class Screen(val route: String) {
             } else {
                 "book_court/$courtName"
             }
+        }
+    }
+    object Payment: Screen("payment/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
+        fun createRoute(
+            courtName: String,
+            selectedDate: String,
+            paymentType: String,
+            totalAmount: Int,
+            timeSlots: String,
+            courtAddress: String = "",
+            pricePerHour: String = "",
+            availableTimeSlots: String = "[]"
+        ): String {
+            val encodedCourtName = URLEncoder.encode(courtName, StandardCharsets.UTF_8.toString())
+            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+            val encodedTimeSlots = URLEncoder.encode(timeSlots, StandardCharsets.UTF_8.toString())
+            val encodedAddress = URLEncoder.encode(courtAddress, StandardCharsets.UTF_8.toString())
+            val encodedPrice = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
+            val encodedAvailableTimeSlots = URLEncoder.encode(availableTimeSlots, StandardCharsets.UTF_8.toString())
+
+            return "payment/$encodedCourtName/$encodedDate/$paymentType/$totalAmount?timeSlots=$encodedTimeSlots&courtAddress=$encodedAddress&pricePerHour=$encodedPrice&availableTimeSlots=$encodedAvailableTimeSlots"
         }
     }
 }
@@ -77,14 +101,54 @@ fun AppNavigation(navController: NavHostController) {
                 }
             )
         ) { backStackEntry ->
-            val encodedCourtName = backStackEntry.arguments?.getString("courtName") ?: ""
-            val courtName = URLDecoder.decode(encodedCourtName, StandardCharsets.UTF_8.toString())
-            val timeSlot = backStackEntry.arguments?.getString("timeSlot")
+            val params = parseBookCourtParams(backStackEntry)
 
             BookCourtScreen(
                 navController = navController,
-                courtName = courtName,
-                timeSlot = timeSlot
+                courtName = params.courtName,
+                timeSlot = params.timeSlot
+            )
+        }
+
+        composable(
+            route = Screen.Payment.route,
+            arguments = listOf(
+                navArgument("courtName") { type = NavType.StringType },
+                navArgument("selectedDate") { type = NavType.StringType },
+                navArgument("paymentType") { type = NavType.StringType },
+                navArgument("totalAmount") { type = NavType.IntType },
+                navArgument("timeSlots") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = "[]"
+                },
+                navArgument("courtAddress") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
+                },
+                navArgument("pricePerHour") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
+                },
+                navArgument("availableTimeSlots") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = "[]"
+                }
+            )
+        ) { backStackEntry ->
+            val params = parsePaymentParams(backStackEntry)
+
+            PaymentScreen(
+                navController = navController,
+                courtName = params.courtName,
+                selectedDate = params.selectedDate,
+                paymentType = params.paymentType,
+                totalAmount = params.totalAmount,
+                selectedTimeSlots = params.selectedTimeSlots,
+                courtData = params.courtData
             )
         }
     }

@@ -29,12 +29,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import brawijaya.example.sportsync.ui.navigation.Screen
 import brawijaya.example.sportsync.ui.viewmodels.BookCourtViewModel
 import brawijaya.example.sportsync.ui.viewmodels.PaymentType
 import brawijaya.example.sportsync.utils.CurrencyUtils.formatCurrency
 
 @Composable
 fun BookCourtContent(
+    navController: NavController,
     courtName: String,
     initialTimeSlot: String? = null,
     viewModel: BookCourtViewModel = viewModel()
@@ -450,7 +453,22 @@ fun BookCourtContent(
                 }
 
                 Button(
-                    onClick = { },
+                    onClick = {
+                        val gson = com.google.gson.Gson()
+                        val timeSlotsJson = gson.toJson(uiState.selectedTimeSlots)
+
+                        val paymentRoute = Screen.Payment.createRoute(
+                            courtName = courtName,
+                            selectedDate = uiState.selectedDate,
+                            paymentType = uiState.paymentType.name,
+                            totalAmount = uiState.totalPrice,
+                            timeSlots = timeSlotsJson,
+                            courtAddress = uiState.court?.address ?: "",
+                            pricePerHour = uiState.court?.pricePerHour ?: ""
+                        )
+
+                        navController?.navigate(paymentRoute)
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFBBB46)
                     ),
