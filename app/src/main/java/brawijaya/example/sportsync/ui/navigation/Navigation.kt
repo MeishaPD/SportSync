@@ -17,7 +17,6 @@ import brawijaya.example.sportsync.ui.screens.home.HomeScreen
 import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
 import brawijaya.example.sportsync.ui.screens.paymentdetail.PaymentDetailScreen
 import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScreen
-import brawijaya.example.sportsync.utils.NavigationUtils.decodeUrl
 import brawijaya.example.sportsync.utils.NavigationUtils.parseBookCourtParams
 import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
 import java.net.URLEncoder
