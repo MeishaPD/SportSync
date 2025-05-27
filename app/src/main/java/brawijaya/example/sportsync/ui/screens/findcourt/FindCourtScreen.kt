@@ -17,25 +17,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.components.DateSelector
 import brawijaya.example.sportsync.ui.navigation.Screen
 import brawijaya.example.sportsync.ui.screens.findcourt.components.CourtCard
 import brawijaya.example.sportsync.ui.screens.findcourt.components.CourtCategoryFilters
-import brawijaya.example.sportsync.ui.screens.findcourt.utils.TimeSlots.generateTimeSlots
+import brawijaya.example.sportsync.ui.viewmodels.CourtViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -137,47 +141,10 @@ fun FindCourtScreen(
 
 @Composable
 fun FindCourtContent(
-    navController: NavController
+    navController: NavController,
+    viewModel: CourtViewModel = viewModel()
 ) {
-
-    val sampleCourts = listOf(
-        CourtData(
-            name = "Lapangan SM Futsal",
-            address = "Jln Sudimoro",
-            pricePerHour = "Rp. 100.000/jam",
-            timeSlots = generateTimeSlots(),
-            isAvailable = true
-        ),
-        CourtData(
-            name = "Champion Futsal",
-            address = "Jln Tlogomas",
-            pricePerHour = "Rp. 100.000/jam",
-            timeSlots = generateTimeSlots(),
-            isAvailable = true
-        ),
-        CourtData(
-            name = "Olimpico Futsal Arena",
-            address = "Jln Bendungan Sutami",
-            pricePerHour = "Rp. 100.000/jam",
-            timeSlots = generateTimeSlots(),
-            isAvailable = true
-        ),
-        CourtData(
-            name = "Wijaya Putra Futsal",
-            address = "Jln Tenaga Selatan",
-            pricePerHour = "",
-            timeSlots = emptyList(),
-            isAvailable = false
-        ),
-        CourtData(
-            name = "Viva Futsal",
-            address = "Jln Bunga Andong",
-            pricePerHour = "Rp. 100.000/jam",
-            timeSlots = generateTimeSlots(),
-            isAvailable = true
-        )
-    )
-
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -198,23 +165,34 @@ fun FindCourtContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    sampleCourts.forEach { court ->
-                        CourtCard(
-                            court = court,
-                            onTimeSlotSelected = { timeSlot ->
-                                val encodedCourtName = URLEncoder.encode(court.name, StandardCharsets.UTF_8.toString())
-                                navController.navigate("book_court/$encodedCourtName?timeSlot=$timeSlot")
-                            },
-                        )
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        uiState.courts.forEach { court ->
+                            CourtCard(
+                                court = court,
+                                onTimeSlotSelected = { timeSlot ->
+                                    val encodedCourtName = URLEncoder.encode(
+                                        court.name,
+                                        StandardCharsets.UTF_8.toString()
+                                    )
+                                    navController.navigate("book_court/$encodedCourtName?timeSlot=$timeSlot")
+                                },
+                            )
+                        }
                     }
                 }
             }

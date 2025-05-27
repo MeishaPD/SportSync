@@ -1,6 +1,7 @@
 package brawijaya.example.sportsync.ui.screens.findcourt.utils
 
-import brawijaya.example.sportsync.ui.screens.findcourt.components.TimeSlot
+import brawijaya.example.sportsync.data.models.TimeSlot
+
 
 object TimeSlots {
     fun generateTimeSlots(): List<TimeSlot> {

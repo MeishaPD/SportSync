@@ -12,3 +12,9 @@ data class CourtData(
     val timeSlots: List<TimeSlot>,
     val isAvailable: Boolean = true
 )
+
+data class BookingItem(
+    val date: String,
+    val timeSlot: String,
+    val price: Int
+)
