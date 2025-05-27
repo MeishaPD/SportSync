@@ -1,43 +1,38 @@
-// Updated PaymentScreen.kt
-package brawijaya.example.sportsync.ui.screens.payment
+package brawijaya.example.sportsync.ui.screens.paymentdetail
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
-import brawijaya.example.sportsync.ui.screens.payment.components.PaymentContent
-import brawijaya.example.sportsync.ui.viewmodels.PaymentType
-import brawijaya.example.sportsync.data.models.BookingItem
-import brawijaya.example.sportsync.data.models.CourtData
+import kotlinx.coroutines.delay
+import brawijaya.example.sportsync.ui.screens.paymentdetail.components.PaymentDetailContent
 
 @Composable
-fun PaymentScreen(
+fun PaymentDetailScreen(
     navController: NavController,
-    courtName: String = "",
-    selectedDate: String = "",
-    paymentType: PaymentType = PaymentType.FULL,
-    totalAmount: Int = 0,
-    selectedTimeSlots: List<BookingItem> = emptyList(),
-    courtData: CourtData? = null
+    orderId: String = "ORDR25052200002783",
+    totalAmount: Int = 100000
 ) {
+    var timeLeft by remember { mutableStateOf(30 * 60) }
+
+    LaunchedEffect(timeLeft) {
+        if (timeLeft > 0) {
+            delay(1000L)
+            timeLeft--
+        }
+    }
+
     Scaffold(
         topBar = {
             Surface(
@@ -49,16 +44,25 @@ fun PaymentScreen(
                         .fillMaxWidth()
                         .heightIn(min = 120.dp)
                         .padding(24.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(
+                        onClick = { navController.popBackStack() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Black
+                        )
+                    }
+
                     Text(
-                        text = "Payment",
+                        text = "Order Details",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
                         color = Color.Black,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.padding(start = 8.dp)
                     )
                 }
             }
@@ -80,14 +84,11 @@ fun PaymentScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            PaymentContent(
+            PaymentDetailContent(
                 navController = navController,
+                orderId = orderId,
                 totalAmount = totalAmount,
-                courtName = courtName,
-                selectedTimeSlots = selectedTimeSlots,
-                selectedDate = selectedDate,
-                paymentType = paymentType,
-                courtData = courtData
+                timeLeft = timeLeft
             )
         }
     }

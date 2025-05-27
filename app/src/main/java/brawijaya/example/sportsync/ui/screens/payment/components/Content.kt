@@ -22,15 +22,18 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavController
 import brawijaya.example.sportsync.ui.viewmodels.PaymentViewModel
 import brawijaya.example.sportsync.ui.viewmodels.PaymentType
 import brawijaya.example.sportsync.data.models.BookingItem
 import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.data.models.PaymentMethod
+import brawijaya.example.sportsync.ui.navigation.Screen
 import brawijaya.example.sportsync.utils.CurrencyUtils.formatCurrency
 
 @Composable
 fun PaymentContent(
+    navController: NavController,
     totalAmount: Int = 100000,
     courtName: String = "",
     selectedTimeSlots: List<BookingItem> = emptyList(),
@@ -217,7 +220,7 @@ fun PaymentContent(
 
                     Log.d("PaymentScreen", "--- TRANSACTION INFORMATION ---")
                     Log.d("PaymentScreen", "Transaction Date: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}")
-                    Log.d("PaymentScreen", "Transaction ID: TXN-${System.currentTimeMillis()}")
+                    Log.d("PaymentScreen", "Transaction ID: ORDR-${System.currentTimeMillis()}")
 
                     Log.d("PaymentScreen", "--- BOOKING SUMMARY ---")
                     Log.d("PaymentScreen", "Total Booking Duration: ${selectedTimeSlots.size} hours")
@@ -229,6 +232,15 @@ fun PaymentContent(
                     Log.d("PaymentScreen", "=====================================")
 
                     viewModel.processPayment(paymentAmount, courtName, selectedTimeSlots, paymentType)
+
+                    val orderId = "ORDR${System.currentTimeMillis()}"
+
+                    navController.navigate(
+                        Screen.PaymentDetail.createRoute(
+                            orderId = orderId,
+                            totalAmount = if (paymentType == PaymentType.DOWN) totalAmount / 2 else totalAmount
+                        )
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()

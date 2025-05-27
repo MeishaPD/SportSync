@@ -15,6 +15,9 @@ import brawijaya.example.sportsync.ui.screens.findmatch.FindMatchScreen
 import brawijaya.example.sportsync.ui.screens.gamezone.GameZoneScreen
 import brawijaya.example.sportsync.ui.screens.home.HomeScreen
 import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
+import brawijaya.example.sportsync.ui.screens.paymentdetail.PaymentDetailScreen
+import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScreen
+import brawijaya.example.sportsync.utils.NavigationUtils.decodeUrl
 import brawijaya.example.sportsync.utils.NavigationUtils.parseBookCourtParams
 import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
 import java.net.URLEncoder
@@ -57,6 +60,20 @@ sealed class Screen(val route: String) {
             val encodedAvailableTimeSlots = URLEncoder.encode(availableTimeSlots, StandardCharsets.UTF_8.toString())
 
             return "payment/$encodedCourtName/$encodedDate/$paymentType/$totalAmount?timeSlots=$encodedTimeSlots&courtAddress=$encodedAddress&pricePerHour=$encodedPrice&availableTimeSlots=$encodedAvailableTimeSlots"
+        }
+    }
+    object PaymentDetail: Screen("payment_detail/{orderId}/{totalAmount}") {
+        fun createRoute(orderId: String, totalAmount: Int): String {
+            return "payment_detail/$orderId/$totalAmount"
+        }
+    }
+
+    object PaymentSuccess: Screen("payment_success/{orderId}/{totalAmount}") {
+        fun createRoute(
+            orderId: String,
+            totalAmount: Int
+        ): String {
+            return "payment_success/$orderId/$totalAmount"
         }
     }
 }
@@ -151,5 +168,38 @@ fun AppNavigation(navController: NavHostController) {
                 courtData = params.courtData
             )
         }
+        composable(
+            route = Screen.PaymentDetail.route,
+            arguments = listOf(
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("totalAmount") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
+
+            PaymentDetailScreen(
+                navController = navController,
+                orderId = orderId,
+                totalAmount = totalAmount
+            )
+        }
+        composable(
+            route = Screen.PaymentSuccess.route,
+            arguments = listOf(
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("totalAmount") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
+
+            PaymentSuccessScreen(
+                navController = navController,
+                orderId = orderId,
+                totalAmount = totalAmount
+            )
+        }
+
     }
 }
