@@ -50,14 +50,14 @@ fun RegisterContent(
     username: String,
     email: String,
     birthOfDate: String,
-    phoneNumber: String,
+    phone: String,
     password: String,
     agreeOnTerms: Boolean,
     onFullNameChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onBirthOfDateChange: (String) -> Unit,
-    onPhoneNumberChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onAgreeOnTermsChange: (Boolean) -> Unit,
     onSignUpClick: () -> Unit
@@ -189,8 +189,8 @@ fun RegisterContent(
         )
 
         OutlinedTextField(
-            value = phoneNumber,
-            onValueChange = onPhoneNumberChange,
+            value = phone,
+            onValueChange = onPhoneChange,
             shape = RoundedCornerShape(50.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),

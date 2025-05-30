@@ -43,13 +43,13 @@ import brawijaya.example.sportsync.R
 @Composable
 fun LoginContent(
     email: String,
-    phoneNumber: String,
+    phone: String,
     password: String,
     onEmailChange: (String) -> Unit,
-    onPhoneNumberChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSignUpClick: () -> Unit,
-    onLoginButtonClick: () -> Unit
+    onLoginButtonClick: (Boolean) -> Unit
 ) {
 
     var isEmailLogin by remember { mutableStateOf(false) }
@@ -104,9 +104,13 @@ fun LoginContent(
         )
 
         OutlinedTextField(
-            value = if (isEmailLogin) email else phoneNumber,
-            onValueChange = {
-                if (isEmailLogin) onEmailChange else onPhoneNumberChange
+            value = if (isEmailLogin) email else phone,
+            onValueChange = { newValue ->
+                if (isEmailLogin) {
+                    onEmailChange(newValue)
+                } else {
+                    onPhoneChange(newValue)
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -176,7 +180,7 @@ fun LoginContent(
 
     Button(
         onClick = {
-            onLoginButtonClick()
+            onLoginButtonClick(isEmailLogin)
         },
         border = BorderStroke(1.dp, Color.Black),
         shape = RoundedCornerShape(50.dp),
