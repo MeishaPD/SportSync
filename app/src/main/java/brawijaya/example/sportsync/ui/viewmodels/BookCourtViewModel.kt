@@ -5,7 +5,6 @@ import brawijaya.example.sportsync.data.models.BookingItem
 import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.data.models.TimeSlot
 import brawijaya.example.sportsync.data.repository.CourtRepository
-import brawijaya.example.sportsync.ui.screens.findcourt.utils.TimeSlots.generateTimeSlots
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -1,6 +1,9 @@
 package brawijaya.example.sportsync.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +21,7 @@ import brawijaya.example.sportsync.ui.screens.onboarding.OnBoardingScreen
 import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
 import brawijaya.example.sportsync.ui.screens.paymentdetail.PaymentDetailScreen
 import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScreen
+import brawijaya.example.sportsync.ui.viewmodels.AuthViewModel
 import brawijaya.example.sportsync.utils.NavigationUtils.parseBookCourtParams
 import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
 import java.net.URLEncoder
@@ -79,10 +83,24 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun AppNavigation(navController: NavHostController) {
+fun AppNavigation(
+    navController: NavHostController,
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val authState by authViewModel.authState.collectAsState()
+
+    if (!authState.isInitialized) {
+        return
+    }
+
+    val startDestination = when {
+        authState.isAuthenticated -> Screen.Home.route
+        else -> Screen.Onboarding.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Onboarding.route
+        startDestination = startDestination
     ) {
         composable(Screen.Onboarding.route) {
             OnBoardingScreen(navController = navController)
@@ -203,6 +221,5 @@ fun AppNavigation(navController: NavHostController) {
                 totalAmount = totalAmount
             )
         }
-
     }
 }
