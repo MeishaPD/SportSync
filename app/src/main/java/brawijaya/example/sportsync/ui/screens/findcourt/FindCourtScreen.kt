@@ -275,7 +275,7 @@ fun FindCourtContent(
                                 address = court.address,
                                 pricePerHour = court.pricePerHour,
                                 date = uiState.selectedDate,
-                                timeSlot = timeSlot
+                                timeSlot = timeSlot,
                             )
                             navController.navigate(route)
                         }

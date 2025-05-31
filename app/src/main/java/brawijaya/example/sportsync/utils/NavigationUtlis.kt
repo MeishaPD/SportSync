@@ -1,12 +1,10 @@
 package brawijaya.example.sportsync.utils
 
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import brawijaya.example.sportsync.data.models.BookingItem
-import brawijaya.example.sportsync.data.models.TimeSlot
 import brawijaya.example.sportsync.data.models.TimeSlotData
 import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.ui.viewmodels.PaymentType
@@ -22,17 +20,7 @@ data class ParsedPaymentParams(
     val courtData: CourtData
 )
 
-data class BookCourtParams(
-    val courtId: String,
-    val courtName: String,
-    val timeSlot: String?
-)
-
 object NavigationUtils {
-
-    fun encodeUrl(text: String): String {
-        return URLEncoder.encode(text, StandardCharsets.UTF_8.toString())
-    }
 
     fun decodeUrl(encodedText: String): String {
         return URLDecoder.decode(encodedText, StandardCharsets.UTF_8.toString())
@@ -48,16 +36,6 @@ object NavigationUtils {
         }
     }
 
-    fun parseTimeSlots(json: String): List<TimeSlot> {
-        return try {
-            val gson = Gson()
-            val type = object : TypeToken<List<TimeSlot>>() {}.type
-            gson.fromJson(json, type) ?: emptyList()
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
     fun parseTimeSlotData(json: String): List<TimeSlotData> {
         return try {
             val gson = Gson()
@@ -66,65 +44,6 @@ object NavigationUtils {
         } catch (e: Exception) {
             emptyList()
         }
-    }
-
-    fun parseCourtData(json: String): CourtData? {
-        return try {
-            val gson = Gson()
-            gson.fromJson(json, CourtData::class.java)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun buildBookCourtRoute(
-        courtId: String,
-        courtName: String,
-        timeSlot: String? = null
-    ): String {
-        val encodedCourtId = encodeUrl(courtId)
-        val encodedCourtName = encodeUrl(courtName)
-
-        return if (timeSlot != null) {
-            val encodedTimeSlot = encodeUrl(timeSlot)
-            "book_court/$encodedCourtId/$encodedCourtName/$encodedTimeSlot"
-        } else {
-            "book_court/$encodedCourtId/$encodedCourtName"
-        }
-    }
-
-    fun buildPaymentRoute(
-        courtData: CourtData,
-        selectedDate: String,
-        paymentType: PaymentType,
-        totalAmount: Int,
-        selectedTimeSlots: List<BookingItem>
-    ): String {
-        val gson = Gson()
-
-        val encodedCourtId = encodeUrl(courtData.id)
-        val encodedCourtName = encodeUrl(courtData.name)
-        val encodedSelectedDate = encodeUrl(selectedDate)
-        val encodedCourtAddress = encodeUrl(courtData.address)
-        val encodedPricePerHour = encodeUrl(courtData.pricePerHour)
-        val encodedTimeSlots = encodeUrl(gson.toJson(selectedTimeSlots))
-        val encodedAvailableTimeSlots = encodeUrl(gson.toJson(courtData.timeSlots))
-
-        return "payment/$encodedCourtId/$encodedCourtName/$encodedSelectedDate/" +
-                "${paymentType.name}/$totalAmount/$encodedTimeSlots/" +
-                "$encodedCourtAddress/$encodedPricePerHour/$encodedAvailableTimeSlots"
-    }
-
-    fun parseBookCourtParams(backStackEntry: NavBackStackEntry): BookCourtParams {
-        val encodedCourtId = backStackEntry.arguments?.getString("courtId") ?: ""
-        val encodedCourtName = backStackEntry.arguments?.getString("courtName") ?: ""
-        val encodedTimeSlot = backStackEntry.arguments?.getString("timeSlot")
-
-        val courtId = decodeUrl(encodedCourtId)
-        val courtName = decodeUrl(encodedCourtName)
-        val timeSlot = encodedTimeSlot?.let { decodeUrl(it) }
-
-        return BookCourtParams(courtId, courtName, timeSlot)
     }
 
     fun parsePaymentParams(backStackEntry: NavBackStackEntry): ParsedPaymentParams {
@@ -179,31 +98,5 @@ object NavigationUtils {
             selectedTimeSlots = selectedTimeSlots,
             courtData = courtData
         )
-    }
-
-    @Deprecated("Use buildBookCourtRoute with courtId instead")
-    fun buildBookCourtRouteByName(
-        courtName: String,
-        timeSlot: String? = null
-    ): String {
-        val encodedCourtName = encodeUrl(courtName)
-
-        return if (timeSlot != null) {
-            val encodedTimeSlot = encodeUrl(timeSlot)
-            "book_court_by_name/$encodedCourtName/$encodedTimeSlot"
-        } else {
-            "book_court_by_name/$encodedCourtName"
-        }
-    }
-
-    @Deprecated("Use parseBookCourtParams instead")
-    fun parseBookCourtParamsByName(backStackEntry: NavBackStackEntry): BookCourtParams {
-        val encodedCourtName = backStackEntry.arguments?.getString("courtName") ?: ""
-        val encodedTimeSlot = backStackEntry.arguments?.getString("timeSlot")
-
-        val courtName = decodeUrl(encodedCourtName)
-        val timeSlot = encodedTimeSlot?.let { decodeUrl(it) }
-
-        return BookCourtParams("", courtName, timeSlot)
     }
 }

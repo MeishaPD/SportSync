@@ -493,6 +493,7 @@ fun BookCourtContent(
                         val timeSlotsJson = gson.toJson(uiState.selectedTimeSlots)
 
                         val paymentRoute = Screen.Payment.createRoute(
+                            courtId = uiState.courtData?.id ?: "",
                             courtName = courtName,
                             selectedDate = uiState.selectedDate,
                             paymentType = uiState.paymentType.name,

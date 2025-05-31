@@ -92,12 +92,14 @@ fun TimeSlotWithAvailability.toTimeSlotData(): TimeSlotData {
     )
 }
 
+@Serializable
 data class BookingItem(
     val date: String,
     val timeSlot: String,
     val price: Int
 )
 
+@Serializable
 enum class PaymentMethod(val displayName: String, @DrawableRes val iconRes: Int) {
     OVO("OVO", R.drawable.ovo),
     PAYPAL("PayPal", R.drawable.paypal),

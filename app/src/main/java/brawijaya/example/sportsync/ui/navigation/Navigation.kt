@@ -59,8 +59,9 @@ sealed class Screen(val route: String) {
             }
         }
     }
-    object Payment: Screen("payment/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
+    object Payment: Screen("payment/{courtId}/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
         fun createRoute(
+            courtId: String,
             courtName: String,
             selectedDate: String,
             paymentType: String,
@@ -70,6 +71,7 @@ sealed class Screen(val route: String) {
             pricePerHour: String = "",
             availableTimeSlots: String = "[]"
         ): String {
+            val encodedCourtId = URLEncoder.encode(courtId, StandardCharsets.UTF_8.toString())
             val encodedCourtName = URLEncoder.encode(courtName, StandardCharsets.UTF_8.toString())
             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
             val encodedTimeSlots = URLEncoder.encode(timeSlots, StandardCharsets.UTF_8.toString())
@@ -77,21 +79,21 @@ sealed class Screen(val route: String) {
             val encodedPrice = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
             val encodedAvailableTimeSlots = URLEncoder.encode(availableTimeSlots, StandardCharsets.UTF_8.toString())
 
-            return "payment/$encodedCourtName/$encodedDate/$paymentType/$totalAmount?timeSlots=$encodedTimeSlots&courtAddress=$encodedAddress&pricePerHour=$encodedPrice&availableTimeSlots=$encodedAvailableTimeSlots"
+            return "payment/$encodedCourtId/$encodedCourtName/$encodedDate/$paymentType/$totalAmount?timeSlots=$encodedTimeSlots&courtAddress=$encodedAddress&pricePerHour=$encodedPrice&availableTimeSlots=$encodedAvailableTimeSlots"
         }
     }
-    object PaymentDetail: Screen("payment_detail/{orderId}/{totalAmount}") {
-        fun createRoute(orderId: String, totalAmount: Int): String {
-            return "payment_detail/$orderId/$totalAmount"
+    object PaymentDetail: Screen("payment_detail/{bookingId}/{totalAmount}") {
+        fun createRoute(bookingId: String, totalAmount: Int): String {
+            return "payment_detail/$bookingId/$totalAmount"
         }
     }
 
-    object PaymentSuccess: Screen("payment_success/{orderId}/{totalAmount}") {
+    object PaymentSuccess: Screen("payment_success/{bookingId}/{totalAmount}") {
         fun createRoute(
-            orderId: String,
+            bookingId: String,
             totalAmount: Int
         ): String {
-            return "payment_success/$orderId/$totalAmount"
+            return "payment_success/$bookingId/$totalAmount"
         }
     }
 }
@@ -196,10 +198,10 @@ fun AppNavigation(
                 timeSlot = timeSlot
             )
         }
-
         composable(
             route = Screen.Payment.route,
             arguments = listOf(
+                navArgument("courtId") { type = NavType.StringType },
                 navArgument("courtName") { type = NavType.StringType },
                 navArgument("selectedDate") { type = NavType.StringType },
                 navArgument("paymentType") { type = NavType.StringType },
@@ -241,32 +243,32 @@ fun AppNavigation(
         composable(
             route = Screen.PaymentDetail.route,
             arguments = listOf(
-                navArgument("orderId") { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("totalAmount") { type = NavType.IntType }
             )
         ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
 
             PaymentDetailScreen(
                 navController = navController,
-                orderId = orderId,
+                bookingId = bookingId,
                 totalAmount = totalAmount
             )
         }
         composable(
             route = Screen.PaymentSuccess.route,
             arguments = listOf(
-                navArgument("orderId") { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("totalAmount") { type = NavType.IntType }
             )
         ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
 
             PaymentSuccessScreen(
                 navController = navController,
-                orderId = orderId,
+                bookingId = bookingId,
                 totalAmount = totalAmount
             )
         }

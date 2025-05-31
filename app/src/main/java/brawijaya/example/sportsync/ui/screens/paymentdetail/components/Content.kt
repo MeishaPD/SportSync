@@ -22,10 +22,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,21 +38,28 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.ui.navigation.Screen
+import brawijaya.example.sportsync.ui.viewmodels.PaymentDetailViewModel
 import brawijaya.example.sportsync.utils.CurrencyUtils.formatCurrency
+import kotlinx.coroutines.launch
 
 @Composable
 fun PaymentDetailContent(
     navController: NavController,
     orderId: String = "ORDR25052200002783",
     totalAmount: Int = 100000,
-    timeLeft: Int
+    timeLeft: Int,
+    viewModel: PaymentDetailViewModel = hiltViewModel()
 ) {
     val minutes = timeLeft / 60
     val seconds = timeLeft % 60
     val timeString = String.format("%02d:%02d:%02d", 0, minutes, seconds)
+
+    val uiState by viewModel.uiState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier
@@ -127,44 +138,64 @@ fun PaymentDetailContent(
                                 .size(120.dp)
                                 .background(Color.White)
                                 .border(2.dp, Color.Black)
-                                .clickable {
-                                    navController.navigate(
-                                        Screen.PaymentSuccess.createRoute(
-                                            orderId = orderId,
-                                            totalAmount = totalAmount
-                                        )
-                                    )
+                                .clickable(enabled = !uiState.isLoading) {
+                                    coroutineScope.launch {
+                                        val success = viewModel.updateBookingStatusToCompleted(orderId)
+                                        if (success) {
+                                            navController.navigate(
+                                                Screen.PaymentSuccess.createRoute(
+                                                    bookingId = orderId,
+                                                    totalAmount = totalAmount
+                                                )
+                                            )
+                                        }
+                                    }
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-
-                                Image(
-                                    painter = painterResource(id = R.drawable.qr_payment),
-                                    contentDescription = "Qr Code",
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier.fillMaxSize()
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = Color.Black
                                 )
+                            } else {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.qr_payment),
+                                        contentDescription = "Qr Code",
+                                        contentScale = ContentScale.Fit,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
 
-                                Text(
-                                    text = "SCAN ME",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .background(
-                                            Color.Black,
-                                            RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
+                                    Text(
+                                        text = "SCAN ME",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier
+                                            .background(
+                                                Color.Black,
+                                                RoundedCornerShape(4.dp)
+                                            )
+                                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
+                    }
+
+                    if (uiState.error != null) {
+                        Text(
+                            text = uiState.error!!,
+                            color = Color.Red,
+                            fontSize = 14.sp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
 
                     Divider(color = Color.Black, thickness = 1.dp)

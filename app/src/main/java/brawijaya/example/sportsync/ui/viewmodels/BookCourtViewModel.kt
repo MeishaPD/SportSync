@@ -24,7 +24,8 @@ data class BookCourtUiState(
     val paymentType: PaymentType = PaymentType.FULL,
     val selectedDate: String = "",
     val displayDate: String = "",
-    val error: String? = null
+    val error: String? = null,
+    val navigateToPayment: Boolean = false,
 )
 
 enum class PaymentType {
@@ -152,12 +153,6 @@ class BookCourtViewModel(
     fun addTimeSlot(timeSlot: String) {
         val courtData = _uiState.value.courtData ?: return
         val price = extractPrice(courtData.pricePerHour)
-
-        val isAlreadySelected = _uiState.value.selectedTimeSlots.any { it.timeSlot == timeSlot }
-        if (isAlreadySelected) {
-            _uiState.update { it.copy(showTimeSlotDialog = false) }
-            return
-        }
 
         val newBooking = BookingItem(
             date = _uiState.value.displayDate,
