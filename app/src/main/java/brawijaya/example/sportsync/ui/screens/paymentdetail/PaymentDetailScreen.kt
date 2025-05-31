@@ -12,17 +12,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
-import kotlinx.coroutines.delay
 import brawijaya.example.sportsync.ui.screens.paymentdetail.components.PaymentDetailContent
+import brawijaya.example.sportsync.ui.viewmodels.PaymentDetailViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun PaymentDetailScreen(
     navController: NavController,
-    orderId: String = "ORDR25052200002783",
-    totalAmount: Int = 100000
+    bookingId: String,
+    totalAmount: Int,
+    viewModel: PaymentDetailViewModel = hiltViewModel()
 ) {
     var timeLeft by remember { mutableStateOf(30 * 60) }
 
@@ -86,9 +89,10 @@ fun PaymentDetailScreen(
         ) {
             PaymentDetailContent(
                 navController = navController,
-                orderId = orderId,
+                orderId = bookingId,
                 totalAmount = totalAmount,
-                timeLeft = timeLeft
+                timeLeft = timeLeft,
+                viewModel = viewModel
             )
         }
     }

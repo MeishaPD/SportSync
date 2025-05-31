@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.LocalContext
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
@@ -43,6 +42,9 @@ fun PaymentContent(
     viewModel: PaymentViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Calculate the actual payment amount based on payment type
+    val paymentAmount = if (paymentType == PaymentType.DOWN) totalAmount / 2 else totalAmount
 
     LazyColumn(
         modifier = Modifier
@@ -72,16 +74,23 @@ fun PaymentContent(
                 ) {
                     Column {
                         Text(
-                            text = "Total Payment",
+                            text = if (paymentType == PaymentType.DOWN) "Down Payment" else "Total Payment",
                             fontSize = 14.sp,
                             color = Color.Black
                         )
                         Text(
-                            text = formatCurrency(totalAmount),
+                            text = formatCurrency(paymentAmount),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black
                         )
+                        if (paymentType == PaymentType.DOWN) {
+                            Text(
+                                text = "Remaining: ${formatCurrency(totalAmount - paymentAmount)}",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
                     }
 
                     TextButton(
@@ -129,7 +138,7 @@ fun PaymentContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Bank Transfer",
+                        text = "Digital Payment",
                         fontSize = 16.sp,
                         color = Color.Black
                     )
@@ -147,9 +156,21 @@ fun PaymentContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PaymentMethodItem(
+                    method = PaymentMethod.QRIS,
+                    isSelected = uiState.selectedPaymentMethod == PaymentMethod.QRIS,
+                    onSelect = { viewModel.selectPaymentMethod(PaymentMethod.QRIS) }
+                )
+
+                PaymentMethodItem(
                     method = PaymentMethod.OVO,
                     isSelected = uiState.selectedPaymentMethod == PaymentMethod.OVO,
                     onSelect = { viewModel.selectPaymentMethod(PaymentMethod.OVO) }
+                )
+
+                PaymentMethodItem(
+                    method = PaymentMethod.GOPAY,
+                    isSelected = uiState.selectedPaymentMethod == PaymentMethod.GOPAY,
+                    onSelect = { viewModel.selectPaymentMethod(PaymentMethod.GOPAY) }
                 )
 
                 PaymentMethodItem(
@@ -165,22 +186,26 @@ fun PaymentContent(
                 )
 
                 PaymentMethodItem(
-                    method = PaymentMethod.QRIS,
-                    isSelected = uiState.selectedPaymentMethod == PaymentMethod.QRIS,
-                    onSelect = { viewModel.selectPaymentMethod(PaymentMethod.QRIS) }
-                )
-
-                PaymentMethodItem(
-                    method = PaymentMethod.GOPAY,
-                    isSelected = uiState.selectedPaymentMethod == PaymentMethod.GOPAY,
-                    onSelect = { viewModel.selectPaymentMethod(PaymentMethod.GOPAY) }
-                )
-
-                PaymentMethodItem(
                     method = PaymentMethod.APPLEPAY,
                     isSelected = uiState.selectedPaymentMethod == PaymentMethod.APPLEPAY,
                     onSelect = { viewModel.selectPaymentMethod(PaymentMethod.APPLEPAY) }
                 )
+            }
+        }
+
+        if (uiState.paymentError != null) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Text(
+                        text = uiState.paymentError!!,
+                        color = Color.Red,
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
 
@@ -189,11 +214,13 @@ fun PaymentContent(
 
             Button(
                 onClick = {
+                    // Log comprehensive booking details
                     Log.d("PaymentScreen", "=== COMPREHENSIVE BOOKING DETAILS ===")
-
                     Log.d("PaymentScreen", "--- COURT INFORMATION ---")
                     Log.d("PaymentScreen", "Court Name: $courtName")
+
                     courtData?.let { court ->
+                        Log.d("PaymentScreen", "Court ID: ${court.id}")
                         Log.d("PaymentScreen", "Court Address: ${court.address}")
                         Log.d("PaymentScreen", "Price Per Hour: ${court.pricePerHour}")
                         Log.d("PaymentScreen", "Court Available: ${court.isAvailable}")
@@ -214,34 +241,49 @@ fun PaymentContent(
                     Log.d("PaymentScreen", "--- PAYMENT INFORMATION ---")
                     Log.d("PaymentScreen", "Payment Type: ${paymentType.name}")
                     Log.d("PaymentScreen", "Total Amount: ${formatCurrency(totalAmount)}")
-                    val paymentAmount = if (paymentType == PaymentType.DOWN) totalAmount / 2 else totalAmount
                     Log.d("PaymentScreen", "Amount to Pay Now: ${formatCurrency(paymentAmount)}")
                     Log.d("PaymentScreen", "Selected Payment Method: ${uiState.selectedPaymentMethod.displayName}")
 
                     Log.d("PaymentScreen", "--- TRANSACTION INFORMATION ---")
                     Log.d("PaymentScreen", "Transaction Date: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}")
-                    Log.d("PaymentScreen", "Transaction ID: ORDR-${System.currentTimeMillis()}")
 
                     Log.d("PaymentScreen", "--- BOOKING SUMMARY ---")
                     Log.d("PaymentScreen", "Total Booking Duration: ${selectedTimeSlots.size} hours")
                     Log.d("PaymentScreen", "Total Cost: ${formatCurrency(totalAmount)}")
                     if (paymentType == PaymentType.DOWN) {
-                        Log.d("PaymentScreen", "Remaining Balance: ${formatCurrency(totalAmount / 2)}")
+                        Log.d("PaymentScreen", "Remaining Balance: ${formatCurrency(totalAmount - paymentAmount)}")
                     }
-
                     Log.d("PaymentScreen", "=====================================")
 
-                    viewModel.processPayment(paymentAmount, courtName, selectedTimeSlots, paymentType)
+                    // Create booking using the new ViewModel method
+                    courtData?.let { court ->
+                        viewModel.createBooking(
+                            courtId = court.id,
+                            courtName = courtName,
+                            selectedDate = selectedDate,
+                            totalAmount = totalAmount,
+                            selectedTimeSlots = selectedTimeSlots,
+                            paymentType = paymentType,
+                            onSuccess = { bookingId ->
+                                Log.d("PaymentScreen", "Booking created successfully with ID: $bookingId")
 
-                    val orderId = "ORDR${System.currentTimeMillis()}"
-
-                    navController.navigate(
-                        Screen.PaymentDetail.createRoute(
-                            orderId = orderId,
-                            totalAmount = if (paymentType == PaymentType.DOWN) totalAmount / 2 else totalAmount
+                                // Navigate to payment detail screen
+                                navController.navigate(
+                                    Screen.PaymentDetail.createRoute(
+                                        bookingId = bookingId,
+                                        totalAmount = paymentAmount
+                                    )
+                                )
+                            },
+                            onError = { error ->
+                                Log.e("PaymentScreen", "Booking creation failed: $error")
+                            }
                         )
-                    )
+                    } ?: run {
+                        Log.e("PaymentScreen", "Court data is null, cannot create booking")
+                    }
                 },
+                enabled = !uiState.isProcessingPayment && courtData != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -251,16 +293,36 @@ fun PaymentContent(
                         shape = RoundedCornerShape(16.dp)
                     ),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFCCD78)
+                    containerColor = Color(0xFFFCCD78),
+                    disabledContainerColor = Color.Gray
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text(
-                    text = "Pay",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
+                if (uiState.isProcessingPayment) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.Black,
+                            strokeWidth = 2.dp
+                        )
+                        Text(
+                            text = "Processing...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Pay ${formatCurrency(paymentAmount)}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
             }
         }
     }
@@ -277,7 +339,7 @@ private fun PaymentMethodItem(
             .fillMaxWidth()
             .border(
                 width = 1.dp,
-                color = Color.Black,
+                color = if (isSelected) Color(0xFFFBBB46) else Color.Black,
                 shape = RoundedCornerShape(16.dp)
             )
             .selectable(
@@ -285,7 +347,9 @@ private fun PaymentMethodItem(
                 onClick = onSelect
             ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) Color(0xFFFFF8E1) else Color.White
+        ),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
@@ -311,7 +375,8 @@ private fun PaymentMethodItem(
                 Text(
                     text = method.displayName,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = Color.Black,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 )
             }
 

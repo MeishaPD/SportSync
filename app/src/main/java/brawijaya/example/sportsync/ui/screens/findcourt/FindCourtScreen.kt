@@ -21,11 +21,17 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,14 +46,15 @@ import brawijaya.example.sportsync.ui.navigation.Screen
 import brawijaya.example.sportsync.ui.screens.findcourt.components.CourtCard
 import brawijaya.example.sportsync.ui.screens.findcourt.components.CourtCategoryFilters
 import brawijaya.example.sportsync.ui.viewmodels.CourtViewModel
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun FindCourtScreen(
     navController: NavController
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Surface(
                 shape = RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp),
@@ -96,14 +103,14 @@ fun FindCourtScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Find Your Opponent",
+                        text = "Find Your Court",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
 
                     Text(
-                        text = "Check the newest challenges",
+                        text = "Book available court slots",
                         fontSize = 14.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 4.dp)
@@ -111,7 +118,7 @@ fun FindCourtScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    DateSelector()
+                    FindCourtDateSelector()
                 }
             }
         },
@@ -133,18 +140,47 @@ fun FindCourtScreen(
                 .padding(innerPadding)
         ) {
             FindCourtContent(
-                navController = navController
+                navController = navController,
+                snackbarHostState = snackbarHostState
             )
         }
     }
 }
 
 @Composable
-fun FindCourtContent(
-    navController: NavController,
+private fun FindCourtDateSelector(
     viewModel: CourtViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    DateSelector(
+        onDateSelected = { dateString ->
+            viewModel.onDateSelected(dateString)
+        }
+    )
+}
+
+@Composable
+fun FindCourtContent(
+    navController: NavController,
+    snackbarHostState: SnackbarHostState,
+    viewModel: CourtViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            val result = snackbarHostState.showSnackbar(
+                message = error,
+                actionLabel = "Retry",
+                duration = SnackbarDuration.Long
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.retry()
+            }
+            viewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -152,48 +188,103 @@ fun FindCourtContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        CourtCategoryFilters()
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Available Court",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+        CourtCategoryFilters(
+            categories = uiState.categories,
+            selectedCategory = uiState.selectedCategory,
+            onCategorySelected = { category ->
+                viewModel.onCategorySelected(category)
+            }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Available Courts",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            if (uiState.displayDate.isNotEmpty()) {
+                Text(
+                    text = uiState.displayDate,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
 
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator()
+                    Text(
+                        text = "Loading courts...",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        } else if (uiState.courts.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "No courts available",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Try selecting a different date or category",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        uiState.courts.forEach { court ->
-                            CourtCard(
-                                court = court,
-                                onTimeSlotSelected = { timeSlot ->
-                                    val encodedCourtName = URLEncoder.encode(
-                                        court.name,
-                                        StandardCharsets.UTF_8.toString()
-                                    )
-                                    navController.navigate("book_court/$encodedCourtName?timeSlot=$timeSlot")
-                                },
+                items(uiState.courts.size) { index ->
+                    val court = uiState.courts[index]
+                    CourtCard(
+                        court = court,
+                        onTimeSlotSelected = { courtId, timeSlot ->
+                            val route = Screen.BookCourt.createRoute(
+                                courtId = court.id,
+                                courtName = court.name,
+                                address = court.address,
+                                pricePerHour = court.pricePerHour,
+                                date = uiState.selectedDate,
+                                timeSlot = timeSlot,
                             )
+                            navController.navigate(route)
                         }
-                    }
+                    )
+
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

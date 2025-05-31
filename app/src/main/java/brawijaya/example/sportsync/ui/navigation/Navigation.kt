@@ -27,8 +27,8 @@ import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScree
 import brawijaya.example.sportsync.ui.screens.profile.ProfileScreen
 import brawijaya.example.sportsync.ui.screens.profiledetail.ProfileDetailScreen
 import brawijaya.example.sportsync.ui.viewmodels.AuthViewModel
-import brawijaya.example.sportsync.utils.NavigationUtils.parseBookCourtParams
 import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -41,6 +41,20 @@ sealed class Screen(val route: String) {
     object CreateChallenge: Screen("create_challenge")
     object DetailChallenge: Screen("detail_challenge")
     object FindCourt: Screen("find_court")
+    object BookCourt: Screen("book_court/{courtId}/{courtName}/{address}/{pricePerHour}/{date}?timeSlot={timeSlot}") {
+        fun createRoute(
+            courtId: String,
+            courtName: String,
+            address: String,
+            pricePerHour: String,
+            date: String,
+            timeSlot: String? = null
+        ): String {
+            val encodedCourtId = URLEncoder.encode(courtId, StandardCharsets.UTF_8.toString())
+            val encodedCourtName = URLEncoder.encode(courtName, StandardCharsets.UTF_8.toString())
+            val encodedAddress = URLEncoder.encode(address, StandardCharsets.UTF_8.toString())
+            val encodedPricePerHour = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
+            val encodedDate = URLEncoder.encode(date, StandardCharsets.UTF_8.toString())
     object Profile: Screen("profile")
     object ProfileDetail: Screen("profile_detail")
     object EditProfile: Screen("edit_profile")
@@ -48,15 +62,9 @@ sealed class Screen(val route: String) {
     object FriendDetail: Screen("friend_detail")
     object BookCourt: Screen("book_court/{courtName}?timeSlot={timeSlot}") {
         fun createRoute(courtName: String, timeSlot: String? = null): String {
-            return if (timeSlot != null) {
-                "book_court/$courtName?timeSlot=$timeSlot"
-            } else {
-                "book_court/$courtName"
-            }
-        }
-    }
-    object Payment: Screen("payment/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
+    object Payment: Screen("payment/{courtId}/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
         fun createRoute(
+            courtId: String,
             courtName: String,
             selectedDate: String,
             paymentType: String,
@@ -66,6 +74,7 @@ sealed class Screen(val route: String) {
             pricePerHour: String = "",
             availableTimeSlots: String = "[]"
         ): String {
+            val encodedCourtId = URLEncoder.encode(courtId, StandardCharsets.UTF_8.toString())
             val encodedCourtName = URLEncoder.encode(courtName, StandardCharsets.UTF_8.toString())
             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
             val encodedTimeSlots = URLEncoder.encode(timeSlots, StandardCharsets.UTF_8.toString())
@@ -73,21 +82,21 @@ sealed class Screen(val route: String) {
             val encodedPrice = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
             val encodedAvailableTimeSlots = URLEncoder.encode(availableTimeSlots, StandardCharsets.UTF_8.toString())
 
-            return "payment/$encodedCourtName/$encodedDate/$paymentType/$totalAmount?timeSlots=$encodedTimeSlots&courtAddress=$encodedAddress&pricePerHour=$encodedPrice&availableTimeSlots=$encodedAvailableTimeSlots"
+            return "payment/$encodedCourtId/$encodedCourtName/$encodedDate/$paymentType/$totalAmount?timeSlots=$encodedTimeSlots&courtAddress=$encodedAddress&pricePerHour=$encodedPrice&availableTimeSlots=$encodedAvailableTimeSlots"
         }
     }
-    object PaymentDetail: Screen("payment_detail/{orderId}/{totalAmount}") {
-        fun createRoute(orderId: String, totalAmount: Int): String {
-            return "payment_detail/$orderId/$totalAmount"
+    object PaymentDetail: Screen("payment_detail/{bookingId}/{totalAmount}") {
+        fun createRoute(bookingId: String, totalAmount: Int): String {
+            return "payment_detail/$bookingId/$totalAmount"
         }
     }
 
-    object PaymentSuccess: Screen("payment_success/{orderId}/{totalAmount}") {
+    object PaymentSuccess: Screen("payment_success/{bookingId}/{totalAmount}") {
         fun createRoute(
-            orderId: String,
+            bookingId: String,
             totalAmount: Int
         ): String {
-            return "payment_success/$orderId/$totalAmount"
+            return "payment_success/$bookingId/$totalAmount"
         }
     }
 }
@@ -161,9 +170,11 @@ fun AppNavigation(
         composable(
             route = Screen.BookCourt.route,
             arguments = listOf(
-                navArgument("courtName") {
-                    type = NavType.StringType
-                },
+                navArgument("courtId") { type = NavType.StringType },
+                navArgument("courtName") { type = NavType.StringType },
+                navArgument("address") { type = NavType.StringType },
+                navArgument("pricePerHour") { type = NavType.StringType },
+                navArgument("date") { type = NavType.StringType },
                 navArgument("timeSlot") {
                     type = NavType.StringType
                     nullable = true
@@ -171,18 +182,44 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val params = parseBookCourtParams(backStackEntry)
+            val courtId = URLDecoder.decode(
+                backStackEntry.arguments?.getString("courtId") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val courtName = URLDecoder.decode(
+                backStackEntry.arguments?.getString("courtName") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val address = URLDecoder.decode(
+                backStackEntry.arguments?.getString("address") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val pricePerHour = URLDecoder.decode(
+                backStackEntry.arguments?.getString("pricePerHour") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val date = URLDecoder.decode(
+                backStackEntry.arguments?.getString("date") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val timeSlot = backStackEntry.arguments?.getString("timeSlot")?.let {
+                URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
+            }
 
             BookCourtScreen(
                 navController = navController,
-                courtName = params.courtName,
-                timeSlot = params.timeSlot
+                courtId = courtId,
+                courtName = courtName,
+                address = address,
+                pricePerHour = pricePerHour,
+                date = date,
+                timeSlot = timeSlot
             )
         }
-
         composable(
             route = Screen.Payment.route,
             arguments = listOf(
+                navArgument("courtId") { type = NavType.StringType },
                 navArgument("courtName") { type = NavType.StringType },
                 navArgument("selectedDate") { type = NavType.StringType },
                 navArgument("paymentType") { type = NavType.StringType },
@@ -224,32 +261,32 @@ fun AppNavigation(
         composable(
             route = Screen.PaymentDetail.route,
             arguments = listOf(
-                navArgument("orderId") { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("totalAmount") { type = NavType.IntType }
             )
         ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
 
             PaymentDetailScreen(
                 navController = navController,
-                orderId = orderId,
+                bookingId = bookingId,
                 totalAmount = totalAmount
             )
         }
         composable(
             route = Screen.PaymentSuccess.route,
             arguments = listOf(
-                navArgument("orderId") { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("totalAmount") { type = NavType.IntType }
             )
         ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
 
             PaymentSuccessScreen(
                 navController = navController,
-                orderId = orderId,
+                bookingId = bookingId,
                 totalAmount = totalAmount
             )
         }

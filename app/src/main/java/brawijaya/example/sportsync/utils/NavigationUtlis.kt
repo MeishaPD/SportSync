@@ -1,17 +1,17 @@
 package brawijaya.example.sportsync.utils
 
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import brawijaya.example.sportsync.data.models.BookingItem
-import brawijaya.example.sportsync.data.models.TimeSlot
+import brawijaya.example.sportsync.data.models.TimeSlotData
 import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.ui.viewmodels.PaymentType
 import androidx.navigation.NavBackStackEntry
 
 data class ParsedPaymentParams(
+    val courtId: String,
     val courtName: String,
     val selectedDate: String,
     val paymentType: PaymentType,
@@ -20,15 +20,7 @@ data class ParsedPaymentParams(
     val courtData: CourtData
 )
 
-data class BookCourtParams(
-    val courtName: String,
-    val timeSlot: String?
-)
-
 object NavigationUtils {
-    fun encodeUrl(text: String): String {
-        return URLEncoder.encode(text, StandardCharsets.UTF_8.toString())
-    }
 
     fun decodeUrl(encodedText: String): String {
         return URLDecoder.decode(encodedText, StandardCharsets.UTF_8.toString())
@@ -44,26 +36,20 @@ object NavigationUtils {
         }
     }
 
-    fun parseTimeSlots(json: String): List<TimeSlot> {
+    fun parseTimeSlotData(json: String): List<TimeSlotData> {
         return try {
             val gson = Gson()
-            val type = object : TypeToken<List<TimeSlot>>() {}.type
+            val type = object : TypeToken<List<TimeSlotData>>() {}.type
             gson.fromJson(json, type) ?: emptyList()
         } catch (e: Exception) {
             emptyList()
         }
     }
 
-    fun parseBookCourtParams(backStackEntry: NavBackStackEntry): BookCourtParams {
-        val encodedCourtName = backStackEntry.arguments?.getString("courtName") ?: ""
-        val courtName = decodeUrl(encodedCourtName)
-        val encodedTimeSlot = backStackEntry.arguments?.getString("timeSlot")
-        val timeSlot = encodedTimeSlot?.let { decodeUrl(it) }
-
-        return BookCourtParams(courtName, timeSlot)
-    }
-
     fun parsePaymentParams(backStackEntry: NavBackStackEntry): ParsedPaymentParams {
+        val courtId = decodeUrl(
+            backStackEntry.arguments?.getString("courtId") ?: ""
+        )
         val courtName = decodeUrl(
             backStackEntry.arguments?.getString("courtName") ?: ""
         )
@@ -72,7 +58,6 @@ object NavigationUtils {
         )
         val paymentTypeString = backStackEntry.arguments?.getString("paymentType") ?: "FULL"
         val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
-
         val timeSlotsJson = decodeUrl(
             backStackEntry.arguments?.getString("timeSlots") ?: "[]"
         )
@@ -87,7 +72,7 @@ object NavigationUtils {
         )
 
         val selectedTimeSlots = parseBookingItems(timeSlotsJson)
-        val availableTimeSlots = parseTimeSlots(availableTimeSlotsJson)
+        val availableTimeSlots = parseTimeSlotData(availableTimeSlotsJson)
 
         val paymentType = try {
             PaymentType.valueOf(paymentTypeString)
@@ -96,6 +81,7 @@ object NavigationUtils {
         }
 
         val courtData = CourtData(
+            id = courtId,
             name = courtName,
             address = courtAddress,
             pricePerHour = pricePerHour,
@@ -104,6 +90,7 @@ object NavigationUtils {
         )
 
         return ParsedPaymentParams(
+            courtId = courtId,
             courtName = courtName,
             selectedDate = selectedDate,
             paymentType = paymentType,

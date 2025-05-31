@@ -5,11 +5,6 @@ import brawijaya.example.sportsync.data.models.Challenge
 import io.github.jan.supabase.postgrest.*
 import io.github.jan.supabase.postgrest.query.*
 import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.postgresChangeFlow
-import io.github.jan.supabase.realtime.realtime
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.util.Objects.isNull
 
@@ -75,58 +70,6 @@ class ChallengeRepository {
                 }
                 .decodeSingle<Challenge>()
             Result.success(challenge)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getChallengesByCategory(category: String): Result<List<Challenge>> {
-        return try {
-            val challenges = supabase
-                .from("challenge")
-                .select {
-                    filter {
-                        eq("category", category)
-                    }
-                    order("created_at", order = Order.ASCENDING)
-                }
-                .decodeList<Challenge>()
-            Result.success(challenges)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getChallengesByDate(date: String): Result<List<Challenge>> {
-        return try {
-            val challenges = supabase
-                .from("challenge")
-                .select {
-                    filter {
-                        eq("date", date)
-                    }
-                    order("created_at", order = Order.DESCENDING)
-                }
-                .decodeList<Challenge>()
-            Result.success(challenges)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getChallengesByCategoryAndDate(category: String, date: String): Result<List<Challenge>> {
-        return try {
-            val challenges = supabase
-                .from("challenge")
-                .select {
-                    filter {
-                        eq("category", category)
-                        eq("date", date)
-                    }
-                    order("created_at", order = Order.ASCENDING)
-                }
-                .decodeList<Challenge>()
-            Result.success(challenges)
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -22,5 +22,16 @@
    kotlinx.serialization.KSerializer serializer(...);
 }
 
+# Keep all fields with @kotlinx.serialization.SerialName
+-keep class * {
+    @kotlinx.serialization.SerialName <fields>;
+}
+
+# Additional rules for enum handling if you use enums
+-keepclassmembers enum * { *; }
+
+# Keep all @Serializable classes completely
+-keep @kotlinx.serialization.Serializable class ** { *; }
+
 # @Serializable and @Polymorphic are used at runtime for polymorphic serialization.
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault

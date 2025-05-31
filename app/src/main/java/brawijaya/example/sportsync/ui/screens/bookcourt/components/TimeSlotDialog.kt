@@ -11,14 +11,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import brawijaya.example.sportsync.data.models.TimeSlot
+import brawijaya.example.sportsync.data.models.TimeSlotData
 import brawijaya.example.sportsync.ui.screens.findcourt.components.TimeSlotChip
 
 @Composable
 fun TimeSlotDialog(
     timeSlots: List<TimeSlot>,
+    selectedTimeSlots: List<String>,
     onTimeSlotSelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val availableTimeSlots = timeSlots.filter { timeSlot ->
+        !selectedTimeSlots.contains(timeSlot.time)
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -38,28 +44,41 @@ fun TimeSlotDialog(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                val chunkedTimeSlots = timeSlots.chunked(3)
-                chunkedTimeSlots.forEach { rowSlots ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rowSlots.forEach { timeSlot ->
-                            Box(modifier = Modifier.weight(1f)) {
-                                TimeSlotChip(
-                                    timeSlot = timeSlot,
-                                    isSelected = false,
-                                    onClick = {
-                                        onTimeSlotSelected(timeSlot.time)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
+                if (availableTimeSlots.isEmpty()) {
+                    Text(
+                        text = "No available time slots",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    val chunkedTimeSlots = availableTimeSlots.chunked(3)
+                    chunkedTimeSlots.forEach { rowSlots ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowSlots.forEach { timeSlot ->
+                                val timeSlotData = TimeSlotData(
+                                    id = timeSlot.id,
+                                    time = timeSlot.time,
+                                    isAvailable = timeSlot.isActive
                                 )
+                                Box(modifier = Modifier.weight(1f)) {
+                                    TimeSlotChip(
+                                        timeSlot = timeSlotData,
+                                        isSelected = false,
+                                        onClick = {
+                                            onTimeSlotSelected(timeSlot.time)
+                                        },
+                                    )
+                                }
                             }
-                        }
-                        repeat(3 - rowSlots.size) {
-                            Spacer(modifier = Modifier.weight(1f))
+                            repeat(3 - rowSlots.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }

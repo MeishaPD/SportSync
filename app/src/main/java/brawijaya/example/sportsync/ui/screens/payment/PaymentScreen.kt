@@ -1,4 +1,3 @@
-// Updated PaymentScreen.kt
 package brawijaya.example.sportsync.ui.screens.payment
 
 import androidx.compose.foundation.layout.Arrangement

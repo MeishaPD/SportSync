@@ -1,6 +1,5 @@
 package brawijaya.example.sportsync.ui.screens.bookcourt.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,19 +37,31 @@ import brawijaya.example.sportsync.utils.CurrencyUtils.formatCurrency
 @Composable
 fun BookCourtContent(
     navController: NavController,
+    courtId: String,
     courtName: String,
+    address: String,
+    pricePerHour: String,
+    date: String,
     initialTimeSlot: String? = null,
     viewModel: BookCourtViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(courtName, initialTimeSlot) {
-        viewModel.loadCourt(courtName, initialTimeSlot)
+    LaunchedEffect(courtId, courtName, address, pricePerHour, date, initialTimeSlot) {
+        viewModel.initializeCourtData(
+            courtId = courtId,
+            courtName = courtName,
+            address = address,
+            pricePerHour = pricePerHour,
+            date = date,
+            initialTimeSlot = initialTimeSlot
+        )
     }
 
     if (uiState.showTimeSlotDialog) {
         TimeSlotDialog(
             timeSlots = uiState.availableTimeSlots,
+            selectedTimeSlots = uiState.selectedTimeSlots.map { it.timeSlot },
             onTimeSlotSelected = { timeSlot ->
                 viewModel.addTimeSlot(timeSlot)
             },
@@ -60,6 +71,30 @@ fun BookCourtContent(
         )
     }
 
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (uiState.error != null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = uiState.error!!,
+                color = Color.Red,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        return
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -67,7 +102,7 @@ fun BookCourtContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            uiState.court?.let { court ->
+            uiState.courtData?.let { court ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -458,13 +493,14 @@ fun BookCourtContent(
                         val timeSlotsJson = gson.toJson(uiState.selectedTimeSlots)
 
                         val paymentRoute = Screen.Payment.createRoute(
+                            courtId = uiState.courtData?.id ?: "",
                             courtName = courtName,
                             selectedDate = uiState.selectedDate,
                             paymentType = uiState.paymentType.name,
                             totalAmount = uiState.totalPrice,
                             timeSlots = timeSlotsJson,
-                            courtAddress = uiState.court?.address ?: "",
-                            pricePerHour = uiState.court?.pricePerHour ?: ""
+                            courtAddress = uiState.courtData?.address ?: "",
+                            pricePerHour = uiState.courtData?.pricePerHour ?: ""
                         )
 
                         navController?.navigate(paymentRoute)
