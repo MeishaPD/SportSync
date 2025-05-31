@@ -25,21 +25,30 @@ import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import brawijaya.example.sportsync.ui.components.DateSelector
 import brawijaya.example.sportsync.ui.screens.findmatch.components.ChallengeCard
 import brawijaya.example.sportsync.ui.screens.findmatch.components.SportCategoryFilters
+import brawijaya.example.sportsync.ui.viewmodels.ChallengeUiState
+import brawijaya.example.sportsync.ui.viewmodels.ChallengeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FindMatchScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: ChallengeViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         topBar = {
             Surface(
@@ -102,7 +111,11 @@ fun FindMatchScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    DateSelector()
+                    DateSelector(
+                        onDateSelected = { date ->
+                            viewModel.selectDate(date)
+                        }
+                    )
                 }
             }
         },
@@ -124,7 +137,9 @@ fun FindMatchScreen(
                 .padding(innerPadding)
         ) {
             FindMatchContent(
-                navController = navController
+                navController = navController,
+                viewModel = viewModel,
+                uiState = uiState
             )
         }
     }
@@ -133,14 +148,21 @@ fun FindMatchScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FindMatchContent(
-    navController: NavController
+    navController: NavController,
+    viewModel: ChallengeViewModel,
+    uiState: ChallengeUiState
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        SportCategoryFilters()
+        SportCategoryFilters(
+            selectedCategory = uiState.selectedCategory,
+            onCategorySelected = { category ->
+                viewModel.selectCategory(category)
+            }
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -153,25 +175,63 @@ fun FindMatchContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ChallengeCard(
-            title = "Main Santai Bang",
-            organizer = "By Alex Turner",
-            status = "Tunggal Pria",
-            sportIcon = R.drawable.julius_caesar,
-            onClick = { navController.navigate(Screen.DetailChallenge.route)}
-        )
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        uiState.errorMessage?.let { error ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f))
+            ) {
+                Text(
+                    text = "Error: $error",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
 
-        ChallengeCard(
-            title = "Cari Lawan 2v2",
-            organizer = "By Alex Turner",
-            status = "Ganda Pria",
-            sportIcon = R.drawable.julius_caesar,
-            onClick = { navController.navigate(Screen.DetailChallenge.route)}
-        )
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            items(uiState.filteredChallenges) { challenge ->
+                ChallengeCard(
+                    title = challenge.declaration,
+                    organizer = "By Anonymous",
+                    status = "${challenge.type} ${challenge.gender}",
+                    sportIcon = R.drawable.julius_caesar,
+                    onClick = {
+                        navController.navigate("${Screen.DetailChallenge.route}/${challenge.id}")
+                    }
+                )
+            }
 
-        Spacer(modifier = Modifier.weight(1f))
+            if (uiState.filteredChallenges.isEmpty() && !uiState.isLoading) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.Gray.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            text = "No challenges found for the selected filters",
+                            modifier = Modifier.padding(24.dp),
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+        }
 
         Box(
             modifier = Modifier.fillMaxWidth(),

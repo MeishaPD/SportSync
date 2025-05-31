@@ -36,13 +36,62 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import brawijaya.example.sportsync.data.models.Challenge
 import brawijaya.example.sportsync.ui.components.ReadOnlyTextField
+import brawijaya.example.sportsync.ui.viewmodels.ChallengeViewModel
+import androidx.compose.runtime.getValue
 
 @Composable
 fun DetailChallengeScreen(
-    navController: NavController
+    navController: NavController,
+    challengeId: String,
+    viewModel: ChallengeViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(challengeId) {
+        viewModel.getChallengeById(challengeId)
+    }
+
+    LaunchedEffect(uiState.isAcceptSuccess) {
+        if (uiState.isAcceptSuccess) {
+            snackbarHostState.showSnackbar(
+                message = "Challenge accepted successfully!",
+                duration = SnackbarDuration.Short
+            )
+            viewModel.resetAcceptSuccessState()
+            navController.navigate(Screen.FindMatch.route)
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearErrorMessage()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearCurrentChallenge()
+        }
+    }
+
     Scaffold(
         topBar = {
             Surface(
@@ -66,7 +115,7 @@ fun DetailChallengeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
-                            contentDescription = "Search",
+                            contentDescription = "Back",
                             tint = Color.Black
                         )
                     }
@@ -96,6 +145,9 @@ fun DetailChallengeScreen(
                     }
                 }
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { innerPadding ->
         Box(
@@ -103,21 +155,40 @@ fun DetailChallengeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            DetailChallengeContent()
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                uiState.currentChallenge != null -> {
+                    DetailChallengeContent(
+                        challenge = uiState.currentChallenge!!,
+                        isAcceptLoading = uiState.isAcceptLoading,
+                        onAcceptChallenge = { viewModel.acceptChallenge(challengeId) }
+                    )
+                }
+                else -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Challenge not found")
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
 fun DetailChallengeContent(
-    title: String = "Main ga Santai Bang",
-    challengeDeclaration: String = "Badmin 3v2",
-    sportCategory: String = "Badminton",
-    gender: String = "Man",
-    matchType: String = "Single",
-    date: String = "25/12/2024",
-    time: String = "14:30",
-    description: String = "Kalah jual ginjal"
+    challenge: Challenge,
+    isAcceptLoading: Boolean,
+    onAcceptChallenge: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -127,7 +198,7 @@ fun DetailChallengeContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = title,
+            text = challenge.declaration,
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
@@ -137,22 +208,22 @@ fun DetailChallengeContent(
 
         ReadOnlyTextField(
             label = "Challenge Declaration",
-            value = challengeDeclaration
+            value = challenge.declaration
         )
 
         ReadOnlyTextField(
             label = "Sport Category",
-            value = sportCategory
+            value = challenge.category
         )
 
         ReadOnlyTextField(
             label = "Gender",
-            value = gender
+            value = challenge.gender
         )
 
         ReadOnlyTextField(
             label = "Match Type",
-            value = matchType
+            value = challenge.type
         )
 
         Row(
@@ -161,45 +232,76 @@ fun DetailChallengeContent(
         ) {
             ReadOnlyTextField(
                 label = "Date",
-                value = date,
+                value = challenge.getDisplayDate(),
                 modifier = Modifier.weight(1f)
             )
 
             ReadOnlyTextField(
                 label = "Time",
-                value = time,
+                value = challenge.getDisplayTime(),
                 modifier = Modifier.weight(1f)
             )
         }
 
         ReadOnlyTextField(
             label = "Description",
-            value = description,
+            value = challenge.description ?: "No description provided",
             modifier = Modifier.height(120.dp),
             shape = RoundedCornerShape(15.dp),
             maxLines = Int.MAX_VALUE
         )
 
-        Button(
-            onClick = { },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp).border(
-                    width = 1.dp,
-                    color = Color.Black,
-                    shape = RoundedCornerShape(28.dp)
+        if (challenge.isAccepted()) {
+            OutlinedButton(
+                onClick = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = Color.Gray
                 ),
-            shape = RoundedCornerShape(28.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFBBB46)
-            )
-        ) {
-            Text(
-                text = "Accept",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+                enabled = false
+            ) {
+                Text(
+                    text = "Already Accepted",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Button(
+                onClick = onAcceptChallenge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color.Black,
+                        shape = RoundedCornerShape(28.dp)
+                    ),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFBBB46)
+                ),
+                enabled = !isAcceptLoading
+            ) {
+                if (isAcceptLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.Black,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Accept",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+            }
         }
     }
 }
