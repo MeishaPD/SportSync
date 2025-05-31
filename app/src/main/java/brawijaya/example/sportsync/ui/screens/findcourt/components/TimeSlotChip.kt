@@ -15,17 +15,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import brawijaya.example.sportsync.data.models.TimeSlot
+import brawijaya.example.sportsync.data.models.TimeSlotData
 
 @Composable
 fun TimeSlotChip(
-    timeSlot: TimeSlot,
+    timeSlot: TimeSlotData,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .background(
                 color = when {
                     !timeSlot.isAvailable -> Color(0xFFE0E0E0)

@@ -7,11 +7,13 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import brawijaya.example.sportsync.data.models.BookingItem
 import brawijaya.example.sportsync.data.models.TimeSlot
+import brawijaya.example.sportsync.data.models.TimeSlotData
 import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.ui.viewmodels.PaymentType
 import androidx.navigation.NavBackStackEntry
 
 data class ParsedPaymentParams(
+    val courtId: String,
     val courtName: String,
     val selectedDate: String,
     val paymentType: PaymentType,
@@ -21,11 +23,13 @@ data class ParsedPaymentParams(
 )
 
 data class BookCourtParams(
+    val courtId: String,
     val courtName: String,
     val timeSlot: String?
 )
 
 object NavigationUtils {
+
     fun encodeUrl(text: String): String {
         return URLEncoder.encode(text, StandardCharsets.UTF_8.toString())
     }
@@ -54,16 +58,79 @@ object NavigationUtils {
         }
     }
 
+    fun parseTimeSlotData(json: String): List<TimeSlotData> {
+        return try {
+            val gson = Gson()
+            val type = object : TypeToken<List<TimeSlotData>>() {}.type
+            gson.fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun parseCourtData(json: String): CourtData? {
+        return try {
+            val gson = Gson()
+            gson.fromJson(json, CourtData::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun buildBookCourtRoute(
+        courtId: String,
+        courtName: String,
+        timeSlot: String? = null
+    ): String {
+        val encodedCourtId = encodeUrl(courtId)
+        val encodedCourtName = encodeUrl(courtName)
+
+        return if (timeSlot != null) {
+            val encodedTimeSlot = encodeUrl(timeSlot)
+            "book_court/$encodedCourtId/$encodedCourtName/$encodedTimeSlot"
+        } else {
+            "book_court/$encodedCourtId/$encodedCourtName"
+        }
+    }
+
+    fun buildPaymentRoute(
+        courtData: CourtData,
+        selectedDate: String,
+        paymentType: PaymentType,
+        totalAmount: Int,
+        selectedTimeSlots: List<BookingItem>
+    ): String {
+        val gson = Gson()
+
+        val encodedCourtId = encodeUrl(courtData.id)
+        val encodedCourtName = encodeUrl(courtData.name)
+        val encodedSelectedDate = encodeUrl(selectedDate)
+        val encodedCourtAddress = encodeUrl(courtData.address)
+        val encodedPricePerHour = encodeUrl(courtData.pricePerHour)
+        val encodedTimeSlots = encodeUrl(gson.toJson(selectedTimeSlots))
+        val encodedAvailableTimeSlots = encodeUrl(gson.toJson(courtData.timeSlots))
+
+        return "payment/$encodedCourtId/$encodedCourtName/$encodedSelectedDate/" +
+                "${paymentType.name}/$totalAmount/$encodedTimeSlots/" +
+                "$encodedCourtAddress/$encodedPricePerHour/$encodedAvailableTimeSlots"
+    }
+
     fun parseBookCourtParams(backStackEntry: NavBackStackEntry): BookCourtParams {
+        val encodedCourtId = backStackEntry.arguments?.getString("courtId") ?: ""
         val encodedCourtName = backStackEntry.arguments?.getString("courtName") ?: ""
-        val courtName = decodeUrl(encodedCourtName)
         val encodedTimeSlot = backStackEntry.arguments?.getString("timeSlot")
+
+        val courtId = decodeUrl(encodedCourtId)
+        val courtName = decodeUrl(encodedCourtName)
         val timeSlot = encodedTimeSlot?.let { decodeUrl(it) }
 
-        return BookCourtParams(courtName, timeSlot)
+        return BookCourtParams(courtId, courtName, timeSlot)
     }
 
     fun parsePaymentParams(backStackEntry: NavBackStackEntry): ParsedPaymentParams {
+        val courtId = decodeUrl(
+            backStackEntry.arguments?.getString("courtId") ?: ""
+        )
         val courtName = decodeUrl(
             backStackEntry.arguments?.getString("courtName") ?: ""
         )
@@ -72,7 +139,6 @@ object NavigationUtils {
         )
         val paymentTypeString = backStackEntry.arguments?.getString("paymentType") ?: "FULL"
         val totalAmount = backStackEntry.arguments?.getInt("totalAmount") ?: 0
-
         val timeSlotsJson = decodeUrl(
             backStackEntry.arguments?.getString("timeSlots") ?: "[]"
         )
@@ -87,7 +153,7 @@ object NavigationUtils {
         )
 
         val selectedTimeSlots = parseBookingItems(timeSlotsJson)
-        val availableTimeSlots = parseTimeSlots(availableTimeSlotsJson)
+        val availableTimeSlots = parseTimeSlotData(availableTimeSlotsJson)
 
         val paymentType = try {
             PaymentType.valueOf(paymentTypeString)
@@ -96,6 +162,7 @@ object NavigationUtils {
         }
 
         val courtData = CourtData(
+            id = courtId,
             name = courtName,
             address = courtAddress,
             pricePerHour = pricePerHour,
@@ -104,6 +171,7 @@ object NavigationUtils {
         )
 
         return ParsedPaymentParams(
+            courtId = courtId,
             courtName = courtName,
             selectedDate = selectedDate,
             paymentType = paymentType,
@@ -111,5 +179,31 @@ object NavigationUtils {
             selectedTimeSlots = selectedTimeSlots,
             courtData = courtData
         )
+    }
+
+    @Deprecated("Use buildBookCourtRoute with courtId instead")
+    fun buildBookCourtRouteByName(
+        courtName: String,
+        timeSlot: String? = null
+    ): String {
+        val encodedCourtName = encodeUrl(courtName)
+
+        return if (timeSlot != null) {
+            val encodedTimeSlot = encodeUrl(timeSlot)
+            "book_court_by_name/$encodedCourtName/$encodedTimeSlot"
+        } else {
+            "book_court_by_name/$encodedCourtName"
+        }
+    }
+
+    @Deprecated("Use parseBookCourtParams instead")
+    fun parseBookCourtParamsByName(backStackEntry: NavBackStackEntry): BookCourtParams {
+        val encodedCourtName = backStackEntry.arguments?.getString("courtName") ?: ""
+        val encodedTimeSlot = backStackEntry.arguments?.getString("timeSlot")
+
+        val courtName = decodeUrl(encodedCourtName)
+        val timeSlot = encodedTimeSlot?.let { decodeUrl(it) }
+
+        return BookCourtParams("", courtName, timeSlot)
     }
 }

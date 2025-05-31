@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import brawijaya.example.sportsync.data.models.TimeSlot
+import brawijaya.example.sportsync.data.models.TimeSlotData
 import brawijaya.example.sportsync.ui.screens.findcourt.components.TimeSlotChip
 
 @Composable
@@ -47,14 +48,19 @@ fun TimeSlotDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         rowSlots.forEach { timeSlot ->
+                            val timeSlotData = TimeSlotData(
+                                id = timeSlot.id,
+                                time = timeSlot.time,
+                                isAvailable = timeSlot.isActive
+                            )
                             Box(modifier = Modifier.weight(1f)) {
                                 TimeSlotChip(
-                                    timeSlot = timeSlot,
+                                    timeSlot = timeSlotData,
+
                                     isSelected = false,
                                     onClick = {
                                         onTimeSlotSelected(timeSlot.time)
                                     },
-                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }

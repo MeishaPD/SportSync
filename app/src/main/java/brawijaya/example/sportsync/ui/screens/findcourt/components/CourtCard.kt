@@ -47,7 +47,7 @@ import brawijaya.example.sportsync.data.models.CourtData
 @Composable
 fun CourtCard(
     court: CourtData,
-    onTimeSlotSelected: (String) -> Unit,
+    onTimeSlotSelected: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
@@ -59,23 +59,6 @@ fun CourtCard(
         label = "rotation"
     )
 
-    val timeSlotChips = remember(court.timeSlots) {
-        court.timeSlots.map { timeSlot ->
-            timeSlot to @Composable {
-                TimeSlotChip(
-                    timeSlot = timeSlot,
-                    isSelected = selectedTimeSlot == timeSlot.time,
-                    onClick = {
-                        if (timeSlot.isAvailable) {
-                            selectedTimeSlot = timeSlot.time
-                            onTimeSlotSelected(timeSlot.time)
-                        }
-                    }
-                )
-            }
-        }
-    }
-
     Column {
         Card(
             modifier = modifier
@@ -86,7 +69,7 @@ fun CourtCard(
                 .border(
                     width = 1.dp,
                     color = Color.Black,
-                    shape =  RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp)
                 ),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
@@ -170,6 +153,7 @@ fun CourtCard(
                 }
             }
         }
+
         AnimatedVisibility(
             visible = isExpanded && court.isAvailable,
             enter = expandVertically(
@@ -178,7 +162,7 @@ fun CourtCard(
             exit = shrinkVertically(
                 animationSpec = tween(300)
             ),
-            modifier = Modifier.offset( y = (-32).dp).zIndex(-10f)
+            modifier = Modifier.offset(y = (-32).dp).zIndex(-10f)
         ) {
             Column(
                 modifier = Modifier
@@ -215,8 +199,17 @@ fun CourtCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    timeSlotChips.forEach { (timeSlot, chipComposable) ->
-                        chipComposable()
+                    court.timeSlots.forEach { timeSlot ->
+                        TimeSlotChip(
+                            timeSlot = timeSlot,
+                            isSelected = selectedTimeSlot == timeSlot.time,
+                            onClick = {
+                                if (timeSlot.isAvailable) {
+                                    selectedTimeSlot = timeSlot.time
+                                    onTimeSlotSelected(court.id, timeSlot.time)
+                                }
+                            }
+                        )
                     }
                 }
             }
