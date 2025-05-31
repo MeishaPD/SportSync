@@ -87,7 +87,7 @@ fun BottomNavigation(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 16.dp),
+                    .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -120,8 +120,8 @@ fun BottomNavigation(
                 BottomNavItem(
                     painterRes = R.drawable.ic_profile,
                     label = "Profile",
-                    isSelected = false,
-                    onClick = { }
+                    isSelected = currentRoute == Screen.Profile.route,
+                    onClick = { onNavigate(Screen.Profile.route) }
                 )
             }
         }

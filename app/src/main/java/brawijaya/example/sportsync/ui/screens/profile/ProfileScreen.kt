@@ -1,43 +1,38 @@
-package brawijaya.example.sportsync.ui.screens.gamezone
+package brawijaya.example.sportsync.ui.screens.profile
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
-import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
-import brawijaya.example.sportsync.ui.screens.gamezone.components.GameZoneContent
-import brawijaya.example.sportsync.ui.screens.gamezone.components.TournamentCategoryFilters
+import brawijaya.example.sportsync.ui.screens.profile.components.ProfileContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GameZoneScreen(
+fun ProfileScreen(
     navController: NavController
 ) {
     Scaffold(
@@ -47,45 +42,48 @@ fun GameZoneScreen(
                 color = Color(0xFFCDE4F4)
             ) {
                 CenterAlignedTopAppBar(
-                    navigationIcon = {
+                    actions = {
                         IconButton(
                             onClick = {
-                                navController.popBackStack()
+                                navController.navigate(Screen.EditProfile.route)
                             },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black
+                            ),
+                            modifier = Modifier.size(30.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
-                                contentDescription = "Back"
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = "Profile Settings"
                             )
                         }
                     },
                     title = {
-                        Text(
-                            text = "GameZone",
-                            fontWeight = FontWeight.Bold
+                        Image(
+                            painter = painterResource(id = R.drawable.person_avatar),
+                            contentDescription = "Profile Avatar",
+                            modifier = Modifier
+                                .size(200.dp)
+                                .offset(y = 16.dp)
+                                .clickable {
+                                    navController.navigate(Screen.ProfileDetail.route)
+                                }
                         )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent
                     ),
-                    modifier = Modifier.padding(16.dp),
-                    actions = {
-                        IconButton(
-                            onClick = {},
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = "Notification"
-                            )
-                        }
-                    }
+                    modifier = Modifier
+                        .padding(horizontal = 32.dp)
+                        .padding(top = 8.dp)
+                        .height(200.dp)
                 )
             }
         },
         bottomBar = {
             BottomNavigation(
-                currentRoute = Screen.GameZone.route,
+                currentRoute = Screen.Profile.route,
                 onNavigate = { route ->
                     navController.navigate(route) {
                         popUpTo(navController.graph.startDestinationId)
@@ -94,13 +92,13 @@ fun GameZoneScreen(
                 }
             )
         }
-    ) { innerPadding ->
+        ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            GameZoneContent()
+            ProfileContent()
         }
     }
 }
