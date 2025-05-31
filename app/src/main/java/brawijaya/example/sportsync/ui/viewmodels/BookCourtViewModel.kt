@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import brawijaya.example.sportsync.data.models.BookingItem
 import brawijaya.example.sportsync.data.models.CourtData
 import brawijaya.example.sportsync.data.models.TimeSlot
-import brawijaya.example.sportsync.data.models.toCourtData
 import brawijaya.example.sportsync.data.repository.CourtRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,15 +15,15 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 data class BookCourtUiState(
-    val court: CourtData? = null,
+    val courtData: CourtData? = null,
     val selectedTimeSlots: List<BookingItem> = emptyList(),
     val totalPrice: Int = 0,
     val isLoading: Boolean = false,
     val showTimeSlotDialog: Boolean = false,
     val availableTimeSlots: List<TimeSlot> = emptyList(),
     val paymentType: PaymentType = PaymentType.FULL,
-    val selectedDate: String = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-    val displayDate: String = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy")),
+    val selectedDate: String = "",
+    val displayDate: String = "",
     val error: String? = null
 )
 
@@ -39,69 +38,98 @@ class BookCourtViewModel(
     private val _uiState = MutableStateFlow(BookCourtUiState())
     val uiState: StateFlow<BookCourtUiState> = _uiState.asStateFlow()
 
-    fun loadCourt(courtId: String, initialTimeSlot: String? = null) {
+    fun initializeCourtData(
+        courtId: String,
+        courtName: String,
+        address: String,
+        pricePerHour: String,
+        date: String,
+        initialTimeSlot: String? = null
+    ) {
+        val courtData = CourtData(
+            id = courtId,
+            name = courtName,
+            address = address,
+            pricePerHour = pricePerHour,
+            timeSlots = emptyList(),
+            isAvailable = true
+        )
+
+        val displayDate = try {
+            val parsedDate = LocalDate.parse(date)
+            parsedDate.format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy"))
+        } catch (e: Exception) {
+            date
+        }
+
+        val initialBookings = if (initialTimeSlot != null) {
+            listOf(
+                BookingItem(
+                    date = displayDate,
+                    timeSlot = initialTimeSlot,
+                    price = extractPrice(pricePerHour)
+                )
+            )
+        } else emptyList()
+
+        _uiState.update {
+            it.copy(
+                courtData = courtData,
+                selectedDate = date,
+                displayDate = displayDate,
+                selectedTimeSlots = initialBookings,
+                totalPrice = initialBookings.sumOf { booking -> booking.price }
+            )
+        }
+
+        loadAvailableTimeSlots(courtId, date)
+    }
+
+    private fun loadAvailableTimeSlots(courtId: String, date: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val currentState = _uiState.value
-
-                val result = courtRepository.getCourtsWithAvailability(
-                    category = null,
-                    date = currentState.selectedDate
-                )
-
-                result.fold(
-                    onSuccess = { courtsWithAvailability ->
-                        val courtWithAvailability = courtsWithAvailability.find {
-                            it.court.id == courtId
-                        }
-
-                        if (courtWithAvailability != null) {
-                            val courtData = courtWithAvailability.toCourtData()
-
-                            val availableTimeSlots = courtWithAvailability.timeSlots
-                                .filter { it.isAvailable }
-                                .map { it.timeSlot }
-
-                            val initialBookings = if (initialTimeSlot != null) {
-                                listOf(
-                                    BookingItem(
-                                        date = currentState.displayDate,
-                                        timeSlot = initialTimeSlot,
-                                        price = extractPrice(courtData.pricePerHour)
-                                    )
-                                )
-                            } else emptyList()
-
-                            _uiState.update {
-                                it.copy(
-                                    court = courtData,
-                                    selectedTimeSlots = initialBookings,
-                                    totalPrice = initialBookings.sumOf { booking -> booking.price },
-                                    availableTimeSlots = availableTimeSlots,
-                                    isLoading = false,
-                                    error = null
-                                )
-                            }
-                        } else {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = "Court not found"
-                                )
-                            }
-                        }
-                    },
-                    onFailure = { exception ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = exception.message ?: "Failed to load court data"
-                            )
-                        }
+                val timeSlotsResult = courtRepository.getTimeSlots()
+                if (timeSlotsResult.isFailure) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Failed to load time slots"
+                        )
                     }
-                )
+                    return@launch
+                }
+
+                val allTimeSlots = timeSlotsResult.getOrNull() ?: emptyList()
+
+                val availabilityResult = courtRepository.getCourtAvailability(courtId, date)
+                if (availabilityResult.isFailure) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Failed to load court availability"
+                        )
+                    }
+                    return@launch
+                }
+
+                val availability = availabilityResult.getOrNull() ?: emptyList()
+                val availabilityMap = availability.associateBy { it.timeSlotId }
+
+                val availableTimeSlots = allTimeSlots.filter { timeSlot ->
+                    val courtAvailability = availabilityMap[timeSlot.id]
+                    courtAvailability?.isAvailable ?: true
+                }
+
+                _uiState.update {
+                    it.copy(
+                        availableTimeSlots = availableTimeSlots,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -122,8 +150,8 @@ class BookCourtViewModel(
     }
 
     fun addTimeSlot(timeSlot: String) {
-        val court = _uiState.value.court ?: return
-        val price = extractPrice(court.pricePerHour)
+        val courtData = _uiState.value.courtData ?: return
+        val price = extractPrice(courtData.pricePerHour)
 
         val isAlreadySelected = _uiState.value.selectedTimeSlots.any { it.timeSlot == timeSlot }
         if (isAlreadySelected) {

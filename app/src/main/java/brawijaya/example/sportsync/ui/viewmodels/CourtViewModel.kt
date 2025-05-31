@@ -1,6 +1,5 @@
 package brawijaya.example.sportsync.ui.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import brawijaya.example.sportsync.data.models.CourtData
@@ -46,7 +45,6 @@ class CourtViewModel(
                 result.fold(
                     onSuccess = { courtsWithAvailability ->
                         val courtData = courtsWithAvailability.map { it.toCourtData() }
-                        Log.d("Courts", "$courtData")
                         _uiState.update {
                             it.copy(
                                 courts = courtData,

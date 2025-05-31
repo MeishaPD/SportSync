@@ -27,7 +27,11 @@ import brawijaya.example.sportsync.ui.screens.bookcourt.components.BookCourtCont
 @Composable
 fun BookCourtScreen(
     navController: NavController,
+    courtId: String,
     courtName: String,
+    address: String,
+    pricePerHour: String,
+    date: String,
     timeSlot: String? = null
 ) {
     Scaffold(
@@ -74,7 +78,11 @@ fun BookCourtScreen(
         ) {
             BookCourtContent(
                 navController = navController,
+                courtId = courtId,
                 courtName = courtName,
+                address = address,
+                pricePerHour = pricePerHour,
+                date = date,
                 initialTimeSlot = timeSlot
             )
         }

@@ -22,8 +22,8 @@ import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
 import brawijaya.example.sportsync.ui.screens.paymentdetail.PaymentDetailScreen
 import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScreen
 import brawijaya.example.sportsync.ui.viewmodels.AuthViewModel
-import brawijaya.example.sportsync.utils.NavigationUtils.parseBookCourtParams
 import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -36,12 +36,26 @@ sealed class Screen(val route: String) {
     object CreateChallenge: Screen("create_challenge")
     object DetailChallenge: Screen("detail_challenge")
     object FindCourt: Screen("find_court")
-    object BookCourt: Screen("book_court/{courtName}?timeSlot={timeSlot}") {
-        fun createRoute(courtName: String, timeSlot: String? = null): String {
+    object BookCourt: Screen("book_court/{courtId}/{courtName}/{address}/{pricePerHour}/{date}?timeSlot={timeSlot}") {
+        fun createRoute(
+            courtId: String,
+            courtName: String,
+            address: String,
+            pricePerHour: String,
+            date: String,
+            timeSlot: String? = null
+        ): String {
+            val encodedCourtId = URLEncoder.encode(courtId, StandardCharsets.UTF_8.toString())
+            val encodedCourtName = URLEncoder.encode(courtName, StandardCharsets.UTF_8.toString())
+            val encodedAddress = URLEncoder.encode(address, StandardCharsets.UTF_8.toString())
+            val encodedPricePerHour = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
+            val encodedDate = URLEncoder.encode(date, StandardCharsets.UTF_8.toString())
+
             return if (timeSlot != null) {
-                "book_court/$courtName?timeSlot=$timeSlot"
+                val encodedTimeSlot = URLEncoder.encode(timeSlot, StandardCharsets.UTF_8.toString())
+                "book_court/$encodedCourtId/$encodedCourtName/$encodedAddress/$encodedPricePerHour/$encodedDate?timeSlot=$encodedTimeSlot"
             } else {
-                "book_court/$courtName"
+                "book_court/$encodedCourtId/$encodedCourtName/$encodedAddress/$encodedPricePerHour/$encodedDate"
             }
         }
     }
@@ -136,9 +150,11 @@ fun AppNavigation(
         composable(
             route = Screen.BookCourt.route,
             arguments = listOf(
-                navArgument("courtName") {
-                    type = NavType.StringType
-                },
+                navArgument("courtId") { type = NavType.StringType },
+                navArgument("courtName") { type = NavType.StringType },
+                navArgument("address") { type = NavType.StringType },
+                navArgument("pricePerHour") { type = NavType.StringType },
+                navArgument("date") { type = NavType.StringType },
                 navArgument("timeSlot") {
                     type = NavType.StringType
                     nullable = true
@@ -146,12 +162,38 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
-            val params = parseBookCourtParams(backStackEntry)
+            val courtId = URLDecoder.decode(
+                backStackEntry.arguments?.getString("courtId") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val courtName = URLDecoder.decode(
+                backStackEntry.arguments?.getString("courtName") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val address = URLDecoder.decode(
+                backStackEntry.arguments?.getString("address") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val pricePerHour = URLDecoder.decode(
+                backStackEntry.arguments?.getString("pricePerHour") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val date = URLDecoder.decode(
+                backStackEntry.arguments?.getString("date") ?: "",
+                StandardCharsets.UTF_8.toString()
+            )
+            val timeSlot = backStackEntry.arguments?.getString("timeSlot")?.let {
+                URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
+            }
 
             BookCourtScreen(
                 navController = navController,
-                courtName = params.courtName,
-                timeSlot = params.timeSlot
+                courtId = courtId,
+                courtName = courtName,
+                address = address,
+                pricePerHour = pricePerHour,
+                date = date,
+                timeSlot = timeSlot
             )
         }
 

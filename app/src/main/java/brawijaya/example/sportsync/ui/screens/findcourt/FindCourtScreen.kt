@@ -46,8 +46,6 @@ import brawijaya.example.sportsync.ui.navigation.Screen
 import brawijaya.example.sportsync.ui.screens.findcourt.components.CourtCard
 import brawijaya.example.sportsync.ui.screens.findcourt.components.CourtCategoryFilters
 import brawijaya.example.sportsync.ui.viewmodels.CourtViewModel
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun FindCourtScreen(
@@ -271,14 +269,18 @@ fun FindCourtContent(
                     CourtCard(
                         court = court,
                         onTimeSlotSelected = { courtId, timeSlot ->
-                            val encodedCourtName = URLEncoder.encode(
-                                court.name,
-                                StandardCharsets.UTF_8.toString()
+                            val route = Screen.BookCourt.createRoute(
+                                courtId = court.id,
+                                courtName = court.name,
+                                address = court.address,
+                                pricePerHour = court.pricePerHour,
+                                date = uiState.selectedDate,
+                                timeSlot = timeSlot
                             )
-
-                            navController.navigate("book_court/$encodedCourtName?timeSlot=$timeSlot&courtId=$courtId&date=${uiState.selectedDate}")
+                            navController.navigate(route)
                         }
                     )
+
                 }
 
                 item {
