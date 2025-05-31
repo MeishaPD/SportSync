@@ -14,6 +14,7 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -120,7 +121,7 @@ fun HomeScreenContent(
     onToggleShowUpComingEvents: () -> Unit
 ) {
 
-    val progress = 1450f / 2000f
+    var progress by remember { mutableFloatStateOf(1450f / 2000f) }
 
     Column(
         modifier = Modifier.padding(vertical = 24.dp)
@@ -276,9 +277,7 @@ fun MainHomeScreenContent(
         }
 
         TextButton(
-            onClick = {
-                showUpComingEvents
-            },
+            onClick = showUpComingEvents,
             colors = ButtonDefaults.buttonColors(
                 contentColor = Color.Black,
                 containerColor = Color.Transparent
