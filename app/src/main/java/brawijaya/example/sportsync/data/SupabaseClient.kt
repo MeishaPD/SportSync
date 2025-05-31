@@ -5,6 +5,8 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.gotrue.Auth
 import brawijaya.example.sportsync.BuildConfig
+import io.github.jan.supabase.serializer.KotlinXSerializer
+import kotlinx.serialization.json.Json
 
 object SupabaseClient {
     val client = createSupabaseClient(
@@ -14,5 +16,11 @@ object SupabaseClient {
         install(Postgrest)
         install(Realtime)
         install(Auth)
+
+        defaultSerializer = KotlinXSerializer(Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        })
     }
 }

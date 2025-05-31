@@ -120,8 +120,15 @@ fun AppNavigation(
         composable(Screen.CreateChallenge.route) {
             CreateChallengeScreen(navController = navController)
         }
-        composable(Screen.DetailChallenge.route) {
-            DetailChallengeScreen(navController = navController)
+        composable(
+            route = "${Screen.DetailChallenge.route}/{challengeId}",
+            arguments = listOf(navArgument("challengeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val challengeId = backStackEntry.arguments?.getString("challengeId") ?: ""
+            DetailChallengeScreen(
+                navController = navController,
+                challengeId = challengeId
+            )
         }
         composable(Screen.FindCourt.route) {
             FindCourtScreen(navController = navController)

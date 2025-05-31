@@ -9,10 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -21,9 +17,12 @@ import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.ui.components.FilterChip
 
 @Composable
-fun SportCategoryFilters() {
-    val categories = listOf("Badminton", "Soccer", "Mini Soccer")
-    var selectedCategory by remember { mutableStateOf("Badminton") }
+fun SportCategoryFilters(
+    selectedCategory: String = "Badminton",
+    onCategorySelected: (String) -> Unit = {}
+) {
+    val categories =
+        listOf("Badminton", "Soccer", "Mini Soccer", "Basketball", "Tennis", "Volleyball")
 
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -37,7 +36,7 @@ fun SportCategoryFilters() {
             ) {
                 Icon(
                     painter = painterResource(R.drawable.filter),
-                    contentDescription = "Search",
+                    contentDescription = "Filter",
                     tint = Color.Black
                 )
             }
@@ -48,7 +47,7 @@ fun SportCategoryFilters() {
             FilterChip(
                 text = category,
                 isSelected = category == selectedCategory,
-                onClick = { selectedCategory = category }
+                onClick = { onCategorySelected(category) }
             )
         }
     }

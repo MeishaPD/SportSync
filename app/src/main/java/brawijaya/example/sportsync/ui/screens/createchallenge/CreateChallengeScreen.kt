@@ -42,8 +42,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,17 +54,44 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import brawijaya.example.sportsync.ui.screens.createchallenge.components.GenderTypeSwitch
+import brawijaya.example.sportsync.ui.viewmodels.ChallengeViewModel
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
 fun CreateChallengeScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: ChallengeViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle success state
+    LaunchedEffect(uiState.isCreateSuccess) {
+        if (uiState.isCreateSuccess) {
+            snackbarHostState.showSnackbar("Challenge created successfully!")
+            viewModel.resetCreateSuccessState()
+            viewModel.resetCreateChallengeForm()
+            navController.popBackStack()
+        }
+    }
+
+    // Handle error messages
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearErrorMessage()
+        }
+    }
+
     Scaffold(
         topBar = {
             Surface(
@@ -86,7 +115,7 @@ fun CreateChallengeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
-                            contentDescription = "Search",
+                            contentDescription = "Back",
                             tint = Color.Black
                         )
                     }
@@ -116,6 +145,9 @@ fun CreateChallengeScreen(
                     }
                 }
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { innerPadding ->
         Box(
@@ -123,20 +155,48 @@ fun CreateChallengeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            CreateChallengeContent()
+            CreateChallengeContent(
+                uiState = uiState,
+                onChallengeDeclarationChange = viewModel::updateChallengeDeclaration,
+                onSportCategoryChange = viewModel::updateSportCategory,
+                onGenderChange = viewModel::updateSelectedGender,
+                onMatchTypeChange = viewModel::updateSelectedMatchType,
+                onDateChange = viewModel::updateCreateSelectedDate,
+                onTimeChange = viewModel::updateCreateSelectedTime,
+                onDescriptionChange = viewModel::updateDescription,
+                onCreateChallenge = viewModel::createChallenge
+            )
+
+            // Loading overlay
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFFFBBB46),
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun CreateChallengeContent() {
-    var challengeDeclaration by remember { mutableStateOf("") }
-    var sportCategory by remember { mutableStateOf("") }
-    var selectedGender by remember { mutableStateOf("Man") }
-    var selectedMatchType by remember { mutableStateOf("Single") }
-    var selectedDate by remember { mutableStateOf("") }
-    var selectedTime by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+fun CreateChallengeContent(
+    uiState: brawijaya.example.sportsync.ui.viewmodels.ChallengeUiState,
+    onChallengeDeclarationChange: (String) -> Unit,
+    onSportCategoryChange: (String) -> Unit,
+    onGenderChange: (String) -> Unit,
+    onMatchTypeChange: (String) -> Unit,
+    onDateChange: (String) -> Unit,
+    onTimeChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onCreateChallenge: () -> Unit
+) {
     var sportDropdownExpanded by remember { mutableStateOf(false) }
 
     val sportCategories =
@@ -152,7 +212,7 @@ fun CreateChallengeContent() {
                 set(year, month, dayOfMonth)
             }
             val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            selectedDate = dateFormat.format(selectedCalendar.time)
+            onDateChange(dateFormat.format(selectedCalendar.time))
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
@@ -167,7 +227,7 @@ fun CreateChallengeContent() {
                 set(Calendar.HOUR_OF_DAY, hourOfDay)
                 set(Calendar.MINUTE, minute)
             }
-            selectedTime = timeFormat.format(timeCalendar.time)
+            onTimeChange(timeFormat.format(timeCalendar.time))
         },
         calendar.get(Calendar.HOUR_OF_DAY),
         calendar.get(Calendar.MINUTE),
@@ -199,8 +259,8 @@ fun CreateChallengeContent() {
                 color = Color.Black
             )
             OutlinedTextField(
-                value = challengeDeclaration,
-                onValueChange = { challengeDeclaration = it },
+                value = uiState.challengeDeclaration,
+                onValueChange = onChallengeDeclarationChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
@@ -228,7 +288,7 @@ fun CreateChallengeContent() {
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 OutlinedTextField(
-                    value = sportCategory,
+                    value = uiState.sportCategory,
                     onValueChange = {},
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(25.dp),
@@ -261,7 +321,7 @@ fun CreateChallengeContent() {
                         DropdownMenuItem(
                             text = { Text(sport) },
                             onClick = {
-                                sportCategory = sport
+                                onSportCategoryChange(sport)
                                 sportDropdownExpanded = false
                             }
                         )
@@ -282,8 +342,8 @@ fun CreateChallengeContent() {
 
             GenderTypeSwitch(
                 options = listOf("Man", "Woman"),
-                selectedOption = selectedGender,
-                onOptionSelected = { selectedGender = it },
+                selectedOption = uiState.selectedGender,
+                onOptionSelected = onGenderChange,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
@@ -300,8 +360,8 @@ fun CreateChallengeContent() {
 
             GenderTypeSwitch(
                 options = listOf("Single", "Doubles"),
-                selectedOption = selectedMatchType,
-                onOptionSelected = { selectedMatchType = it },
+                selectedOption = uiState.selectedMatchType,
+                onOptionSelected = onMatchTypeChange,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
@@ -320,7 +380,7 @@ fun CreateChallengeContent() {
                     color = Color.Black
                 )
                 OutlinedTextField(
-                    value = selectedDate,
+                    value = uiState.createSelectedDate,
                     onValueChange = {},
                     modifier = Modifier
                         .fillMaxWidth()
@@ -356,7 +416,7 @@ fun CreateChallengeContent() {
                     color = Color.Black
                 )
                 OutlinedTextField(
-                    value = selectedTime,
+                    value = uiState.createSelectedTime,
                     onValueChange = {},
                     modifier = Modifier
                         .fillMaxWidth()
@@ -393,8 +453,8 @@ fun CreateChallengeContent() {
                 color = Color.Black
             )
             OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
+                value = uiState.description,
+                onValueChange = onDescriptionChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
@@ -411,10 +471,11 @@ fun CreateChallengeContent() {
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            onClick = { },
+            onClick = onCreateChallenge,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp).border(
+                .height(48.dp)
+                .border(
                     width = 1.dp,
                     color = Color.Black,
                     shape = RoundedCornerShape(28.dp)
@@ -422,14 +483,22 @@ fun CreateChallengeContent() {
             shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFFBBB46)
-            )
+            ),
+            enabled = !uiState.isLoading
         ) {
-            Text(
-                text = "Confirm",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    color = Color.Black,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else {
+                Text(
+                    text = "Confirm",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
         }
     }
 }
