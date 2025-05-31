@@ -13,14 +13,19 @@ import brawijaya.example.sportsync.ui.screens.auth.AuthScreen
 import brawijaya.example.sportsync.ui.screens.bookcourt.BookCourtScreen
 import brawijaya.example.sportsync.ui.screens.createchallenge.CreateChallengeScreen
 import brawijaya.example.sportsync.ui.screens.detailchallenge.DetailChallengeScreen
+import brawijaya.example.sportsync.ui.screens.editprofile.EditProfileScreen
 import brawijaya.example.sportsync.ui.screens.findcourt.FindCourtScreen
 import brawijaya.example.sportsync.ui.screens.findmatch.FindMatchScreen
+import brawijaya.example.sportsync.ui.screens.frienddetail.FriendDetailScreen
+import brawijaya.example.sportsync.ui.screens.friendlist.FriendListScreen
 import brawijaya.example.sportsync.ui.screens.gamezone.GameZoneScreen
 import brawijaya.example.sportsync.ui.screens.home.HomeScreen
 import brawijaya.example.sportsync.ui.screens.onboarding.OnBoardingScreen
 import brawijaya.example.sportsync.ui.screens.payment.PaymentScreen
 import brawijaya.example.sportsync.ui.screens.paymentdetail.PaymentDetailScreen
 import brawijaya.example.sportsync.ui.screens.paymentsuccess.PaymentSuccessScreen
+import brawijaya.example.sportsync.ui.screens.profile.ProfileScreen
+import brawijaya.example.sportsync.ui.screens.profiledetail.ProfileDetailScreen
 import brawijaya.example.sportsync.ui.viewmodels.AuthViewModel
 import brawijaya.example.sportsync.utils.NavigationUtils.parsePaymentParams
 import java.net.URLDecoder
@@ -50,15 +55,13 @@ sealed class Screen(val route: String) {
             val encodedAddress = URLEncoder.encode(address, StandardCharsets.UTF_8.toString())
             val encodedPricePerHour = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
             val encodedDate = URLEncoder.encode(date, StandardCharsets.UTF_8.toString())
-
-            return if (timeSlot != null) {
-                val encodedTimeSlot = URLEncoder.encode(timeSlot, StandardCharsets.UTF_8.toString())
-                "book_court/$encodedCourtId/$encodedCourtName/$encodedAddress/$encodedPricePerHour/$encodedDate?timeSlot=$encodedTimeSlot"
-            } else {
-                "book_court/$encodedCourtId/$encodedCourtName/$encodedAddress/$encodedPricePerHour/$encodedDate"
-            }
-        }
-    }
+    object Profile: Screen("profile")
+    object ProfileDetail: Screen("profile_detail")
+    object EditProfile: Screen("edit_profile")
+    object FriendList: Screen("friend_list")
+    object FriendDetail: Screen("friend_detail")
+    object BookCourt: Screen("book_court/{courtName}?timeSlot={timeSlot}") {
+        fun createRoute(courtName: String, timeSlot: String? = null): String {
     object Payment: Screen("payment/{courtId}/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
         fun createRoute(
             courtId: String,
@@ -148,6 +151,21 @@ fun AppNavigation(
         }
         composable(Screen.FindCourt.route) {
             FindCourtScreen(navController = navController)
+        }
+        composable(Screen.Profile.route) {
+            ProfileScreen(navController = navController)
+        }
+        composable(Screen.ProfileDetail.route) {
+            ProfileDetailScreen(navController = navController)
+        }
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(navController = navController)
+        }
+        composable(Screen.FriendList.route) {
+            FriendListScreen(navController = navController)
+        }
+        composable(Screen.FriendDetail.route) {
+            FriendDetailScreen(navController = navController)
         }
         composable(
             route = Screen.BookCourt.route,

@@ -1,5 +1,10 @@
 package brawijaya.example.sportsync.ui.screens.auth
 
+import android.app.DatePickerDialog
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -186,6 +192,16 @@ fun AuthSwitch(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
+
+    val animatedOffset by animateFloatAsState(
+        targetValue = if (isLogin) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 300,
+            easing = FastOutSlowInEasing
+        ),
+        label = "auth_switch_animation"
+    )
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50.dp))
@@ -194,6 +210,16 @@ fun AuthSwitch(
             .background(Color(0xFFFCCD78)),
         contentAlignment = Alignment.Center
     ) {
+
+        Box(
+            modifier = Modifier
+                .offset(x = (animatedOffset * 163).dp - 81.5.dp)
+                .clip(RoundedCornerShape(50.dp))
+                .width(141.dp)
+                .height(54.dp)
+                .background(Color(0xFFFBBB46))
+        )
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(22.dp)
@@ -203,7 +229,6 @@ fun AuthSwitch(
                     .clip(RoundedCornerShape(50.dp))
                     .width(141.dp)
                     .height(54.dp)
-                    .background(if (isLogin) Color.Transparent else Color(0xFFFBBB46))
                     .clickable {
                         onRegisterClick()
                     },
@@ -220,7 +245,6 @@ fun AuthSwitch(
                     .clip(RoundedCornerShape(50.dp))
                     .width(141.dp)
                     .height(54.dp)
-                    .background(if (isLogin) Color(0xFFFBBB46) else Color.Transparent)
                     .clickable {
                         onLoginClick()
                     },
