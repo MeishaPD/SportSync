@@ -1,5 +1,8 @@
 package brawijaya.example.sportsync.ui.screens.home
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,6 +16,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +29,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,14 +40,52 @@ import androidx.navigation.compose.rememberNavController
 import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
+import brawijaya.example.sportsync.utils.LocationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController
 ) {
-
+    val context = LocalContext.current
     var showUpComingEvents by remember { mutableStateOf(false) }
+    var hasLocationPermission by remember { mutableStateOf(false) }
+    var hasCheckedPermission by remember { mutableStateOf(false) }
+
+    val locationManager = remember { LocationManager(context) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        hasLocationPermission = granted
+    }
+
+    LaunchedEffect(Unit) {
+        hasLocationPermission = locationManager.hasLocationPermission()
+        hasCheckedPermission = true
+
+        if (!hasLocationPermission) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    LaunchedEffect(hasCheckedPermission) {
+        if (hasCheckedPermission && !hasLocationPermission) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -65,10 +108,12 @@ fun HomeScreen(
                         }
                     },
                     title = {
-                        Text(
-                            text = "Hello,\nJulius Caesar",
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column {
+                            Text(
+                                text = "Hello,\nJulius Caesar",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent

@@ -12,6 +12,7 @@ import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import kotlin.coroutines.resume
+import kotlin.math.*
 
 data class LocationData(
     val latitude: Double,
@@ -107,11 +108,30 @@ class LocationManager(private val context: Context) {
         }
     }
 
+    fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val earthRadius = 6371.0
+
+        val lat1Rad = Math.toRadians(lat1)
+        val lon1Rad = Math.toRadians(lon1)
+        val lat2Rad = Math.toRadians(lat2)
+        val lon2Rad = Math.toRadians(lon2)
+
+        val deltaLat = lat2Rad - lat1Rad
+        val deltaLon = lon2Rad - lon1Rad
+
+        val a = sin(deltaLat / 2).pow(2) + cos(lat1Rad) * cos(lat2Rad) * sin(deltaLon / 2).pow(2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        return earthRadius * c
+    }
+
     companion object {
-        const val LOCATION_PERMISSION_REQUEST_CODE = 1001
         val REQUIRED_LOCATION_PERMISSIONS = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
+
+        // Default maximum distance for challenges in kilometers
+        const val DEFAULT_MAX_DISTANCE_KM = 10.0
     }
 }

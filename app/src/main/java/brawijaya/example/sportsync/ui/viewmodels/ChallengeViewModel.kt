@@ -33,7 +33,9 @@ data class ChallengeUiState(
     val isAcceptLoading: Boolean = false,
     val currentLocation: LocationData? = null,
     val isLocationLoading: Boolean = false,
-    val hasLocationPermission: Boolean = false
+    val hasLocationPermission: Boolean = false,
+    val maxDistanceKm: Double = LocationManager.DEFAULT_MAX_DISTANCE_KM,
+    val isLocationBasedFilterEnabled: Boolean = true
 )
 
 class ChallengeViewModel : ViewModel() {
@@ -56,6 +58,10 @@ class ChallengeViewModel : ViewModel() {
     private fun checkLocationPermission() {
         val hasPermission = locationManager?.hasLocationPermission() ?: false
         _uiState.value = _uiState.value.copy(hasLocationPermission = hasPermission)
+
+        if (hasPermission) {
+            getCurrentLocation()
+        }
     }
 
     fun updateLocationPermissionStatus(hasPermission: Boolean) {
@@ -69,7 +75,7 @@ class ChallengeViewModel : ViewModel() {
         locationManager?.let { manager ->
             if (!manager.hasLocationPermission()) {
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = "Location permission is required to create a challenge"
+                    errorMessage = "Location permission is required to get nearby challenges"
                 )
                 return
             }
@@ -83,12 +89,14 @@ class ChallengeViewModel : ViewModel() {
                             currentLocation = locationData,
                             isLocationLoading = false
                         )
+                        loadChallenges()
                     },
                     onFailure = { error ->
                         _uiState.value = _uiState.value.copy(
                             isLocationLoading = false,
                             errorMessage = "Failed to get location: ${error.message}"
                         )
+                        loadAllChallenges()
                     }
                 )
             }
@@ -96,6 +104,54 @@ class ChallengeViewModel : ViewModel() {
     }
 
     fun loadChallenges() {
+        val currentState = _uiState.value
+
+        if (currentState.isLocationBasedFilterEnabled &&
+            currentState.currentLocation != null &&
+            locationManager != null) {
+            loadChallengesNearby()
+        } else {
+            loadAllChallenges()
+        }
+    }
+
+    private fun loadChallengesNearby() {
+        val currentState = _uiState.value
+        val userLocation = currentState.currentLocation
+        val manager = locationManager
+
+        if (userLocation == null || manager == null) {
+            loadAllChallenges()
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+            repository.getAvailableChallengesNearby(
+                userLocation = userLocation,
+                maxDistanceKm = currentState.maxDistanceKm,
+                locationManager = manager
+            ).fold(
+                onSuccess = { challenges ->
+                    _uiState.value = _uiState.value.copy(
+                        challenges = challenges,
+                        filteredChallenges = filterChallenges(challenges),
+                        isLoading = false
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to load nearby challenges: ${error.message}"
+                    )
+                    loadAllChallenges()
+                }
+            )
+        }
+    }
+
+    private fun loadAllChallenges() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
