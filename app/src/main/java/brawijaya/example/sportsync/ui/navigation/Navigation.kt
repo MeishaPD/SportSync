@@ -55,13 +55,20 @@ sealed class Screen(val route: String) {
             val encodedAddress = URLEncoder.encode(address, StandardCharsets.UTF_8.toString())
             val encodedPricePerHour = URLEncoder.encode(pricePerHour, StandardCharsets.UTF_8.toString())
             val encodedDate = URLEncoder.encode(date, StandardCharsets.UTF_8.toString())
+
+            return if (timeSlot != null) {
+                val encodedTimeSlot = URLEncoder.encode(timeSlot, StandardCharsets.UTF_8.toString())
+                "book_court/$encodedCourtId/$encodedCourtName/$encodedAddress/$encodedPricePerHour/$encodedDate?timeSlot=$encodedTimeSlot"
+            } else {
+                "book_court/$encodedCourtId/$encodedCourtName/$encodedAddress/$encodedPricePerHour/$encodedDate"
+            }
+        }
+    }
     object Profile: Screen("profile")
     object ProfileDetail: Screen("profile_detail")
     object EditProfile: Screen("edit_profile")
     object FriendList: Screen("friend_list")
     object FriendDetail: Screen("friend_detail")
-    object BookCourt: Screen("book_court/{courtName}?timeSlot={timeSlot}") {
-        fun createRoute(courtName: String, timeSlot: String? = null): String {
     object Payment: Screen("payment/{courtId}/{courtName}/{selectedDate}/{paymentType}/{totalAmount}?timeSlots={timeSlots}&courtAddress={courtAddress}&pricePerHour={pricePerHour}&availableTimeSlots={availableTimeSlots}") {
         fun createRoute(
             courtId: String,
@@ -90,7 +97,6 @@ sealed class Screen(val route: String) {
             return "payment_detail/$bookingId/$totalAmount"
         }
     }
-
     object PaymentSuccess: Screen("payment_success/{bookingId}/{totalAmount}") {
         fun createRoute(
             bookingId: String,

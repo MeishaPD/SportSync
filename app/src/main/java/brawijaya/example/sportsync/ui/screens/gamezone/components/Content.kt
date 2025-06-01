@@ -58,16 +58,14 @@ fun GameZoneContent() {
         LazyColumn(
             modifier = Modifier.padding(vertical = 16.dp)
         ) {
-            items(12) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(Color.Gray)
-                        .fillMaxWidth()
-                        .height(70.dp)
+            items(6) { index ->
+                TournamentCard(
+                    team1Name = "Red Garuda",
+                    team2Name = "Java Strikers",
+                    date = "Sun, 02 Sep",
+                    time = "14.00 PM",
+                    onClick = {}
                 )
-
-                Spacer(Modifier.size(16.dp))
             }
         }
 
