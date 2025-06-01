@@ -1,7 +1,10 @@
 package brawijaya.example.sportsync.data.repository
 
+import android.util.Log
 import brawijaya.example.sportsync.data.SupabaseClient
 import brawijaya.example.sportsync.data.models.Challenge
+import brawijaya.example.sportsync.utils.LocationData
+import brawijaya.example.sportsync.utils.LocationManager
 import io.github.jan.supabase.postgrest.*
 import io.github.jan.supabase.postgrest.query.*
 import io.github.jan.supabase.gotrue.auth
@@ -89,6 +92,60 @@ class ChallengeRepository {
                 }
                 .decodeList<Challenge>()
             Result.success(challenges)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAvailableChallengesNearby(
+        userLocation: LocationData,
+        maxDistanceKm: Double = LocationManager.DEFAULT_MAX_DISTANCE_KM,
+        locationManager: LocationManager
+    ): Result<List<Challenge>> {
+        return try {
+
+            val allChallengesResult = getAvailableChallenges()
+            Log.d("Challenge Result", "$allChallengesResult")
+            Log.d("Max Distance", "maxDistanceKm = $maxDistanceKm")
+
+            allChallengesResult.fold(
+                onSuccess = { challenges ->
+                    Log.d("Total Challenges", "Found ${challenges.size} challenges")
+
+                    val nearbyChallenges = challenges.filter { challenge ->
+                        if (challenge.latitude == null || challenge.longitude == null) {
+                            return@filter false
+                        }
+
+                        val distance = locationManager.calculateDistance(
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            challenge.latitude,
+                            challenge.longitude
+                        )
+
+                        val isInRange = distance <= maxDistanceKm
+
+                        isInRange
+                    }.sortedBy { challenge ->
+                        if (challenge.latitude != null && challenge.longitude != null) {
+                            locationManager.calculateDistance(
+                                userLocation.latitude,
+                                userLocation.longitude,
+                                challenge.latitude,
+                                challenge.longitude
+                            )
+                        } else {
+                            Double.MAX_VALUE
+                        }
+                    }
+
+                    Result.success(nearbyChallenges)
+                },
+                onFailure = { error ->
+                    Result.failure(error)
+                }
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }

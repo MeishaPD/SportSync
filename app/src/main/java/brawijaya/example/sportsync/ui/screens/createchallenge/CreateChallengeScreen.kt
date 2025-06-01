@@ -1,7 +1,10 @@
 package brawijaya.example.sportsync.ui.screens.createchallenge
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -62,6 +65,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import brawijaya.example.sportsync.ui.screens.createchallenge.components.GenderTypeSwitch
 import brawijaya.example.sportsync.ui.viewmodels.ChallengeViewModel
+import brawijaya.example.sportsync.utils.LocationManager
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -73,8 +77,27 @@ fun CreateChallengeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
-    // Handle success state
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        viewModel.updateLocationPermissionStatus(hasLocationPermission)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.initializeLocationManager(context)
+    }
+
+    LaunchedEffect(uiState.hasLocationPermission, uiState.currentLocation) {
+        if (uiState.hasLocationPermission && uiState.currentLocation == null) {
+            viewModel.getCurrentLocation()
+        }
+    }
+
     LaunchedEffect(uiState.isCreateSuccess) {
         if (uiState.isCreateSuccess) {
             snackbarHostState.showSnackbar("Challenge created successfully!")
@@ -84,7 +107,6 @@ fun CreateChallengeScreen(
         }
     }
 
-    // Handle error messages
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -164,21 +186,40 @@ fun CreateChallengeScreen(
                 onDateChange = viewModel::updateCreateSelectedDate,
                 onTimeChange = viewModel::updateCreateSelectedTime,
                 onDescriptionChange = viewModel::updateDescription,
-                onCreateChallenge = viewModel::createChallenge
+                onCreateChallenge = {
+                    if (!uiState.hasLocationPermission) {
+                        locationPermissionLauncher.launch(LocationManager.REQUIRED_LOCATION_PERMISSIONS)
+                    } else if (uiState.currentLocation == null) {
+                        viewModel.getCurrentLocation()
+                    } else {
+                        viewModel.createChallenge()
+                    }
+                },
             )
 
-            // Loading overlay
-            if (uiState.isLoading) {
+            if (uiState.isLoading || uiState.isLocationLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        color = Color(0xFFFBBB46),
-                        modifier = Modifier.size(50.dp)
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xFFFBBB46),
+                            modifier = Modifier.size(50.dp)
+                        )
+                        if (uiState.isLocationLoading) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Getting your location...",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             }
         }

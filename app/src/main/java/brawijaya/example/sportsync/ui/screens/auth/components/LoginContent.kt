@@ -52,7 +52,7 @@ fun LoginContent(
     onLoginButtonClick: (Boolean) -> Unit
 ) {
 
-    var isEmailLogin by remember { mutableStateOf(false) }
+    var isEmailLogin by remember { mutableStateOf(true) }
     var rememberMe by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
 

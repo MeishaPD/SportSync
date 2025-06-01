@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter
 @Serializable
 data class Challenge(
     val id: String? = null,
-    val created_by: String? =null,
+    val created_by: String? = null,
     val accepted_by: String? = null,
     val declaration: String,
     val description: String? = null,
@@ -17,6 +17,9 @@ data class Challenge(
     val type: String,
     val date: String,
     val time: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val location_name: String? = null,
     val created_at: String? = null
 ) {
     fun getDisplayDate(): String {
@@ -35,6 +38,10 @@ data class Challenge(
         } catch (e: Exception) {
             time
         }
+    }
+
+    fun getDisplayLocation(): String {
+        return location_name ?: "Location not specified"
     }
 
     fun isAccepted(): Boolean {
