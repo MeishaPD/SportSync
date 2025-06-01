@@ -1,9 +1,13 @@
 package brawijaya.example.sportsync.ui.viewmodels
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import brawijaya.example.sportsync.data.models.Challenge
 import brawijaya.example.sportsync.data.repository.ChallengeRepository
+import brawijaya.example.sportsync.utils.LocationManager
+import brawijaya.example.sportsync.utils.LocationData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,18 +30,69 @@ data class ChallengeUiState(
     val description: String = "",
     val isCreateSuccess: Boolean = false,
     val isAcceptSuccess: Boolean = false,
-    val isAcceptLoading: Boolean = false
+    val isAcceptLoading: Boolean = false,
+    val currentLocation: LocationData? = null,
+    val isLocationLoading: Boolean = false,
+    val hasLocationPermission: Boolean = false
 )
 
 class ChallengeViewModel : ViewModel() {
 
     private val repository = ChallengeRepository()
+    private var locationManager: LocationManager? = null
 
     private val _uiState = MutableStateFlow(ChallengeUiState())
     val uiState: StateFlow<ChallengeUiState> = _uiState.asStateFlow()
 
     init {
         loadChallenges()
+    }
+
+    fun initializeLocationManager(context: Context) {
+        locationManager = LocationManager(context)
+        checkLocationPermission()
+    }
+
+    private fun checkLocationPermission() {
+        val hasPermission = locationManager?.hasLocationPermission() ?: false
+        _uiState.value = _uiState.value.copy(hasLocationPermission = hasPermission)
+    }
+
+    fun updateLocationPermissionStatus(hasPermission: Boolean) {
+        _uiState.value = _uiState.value.copy(hasLocationPermission = hasPermission)
+        if (hasPermission) {
+            getCurrentLocation()
+        }
+    }
+
+    fun getCurrentLocation() {
+        locationManager?.let { manager ->
+            if (!manager.hasLocationPermission()) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Location permission is required to create a challenge"
+                )
+                return
+            }
+
+            viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isLocationLoading = true)
+
+                manager.getCurrentLocation().fold(
+                    onSuccess = { locationData ->
+                        _uiState.value = _uiState.value.copy(
+                            currentLocation = locationData,
+                            isLocationLoading = false
+                        )
+                    },
+                    onFailure = { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isLocationLoading = false,
+                            errorMessage = "Failed to get location: ${error.message}"
+                        )
+                    }
+                )
+            }
+        }
     }
 
     fun loadChallenges() {
@@ -164,6 +219,10 @@ class ChallengeViewModel : ViewModel() {
                 _uiState.value = currentState.copy(errorMessage = "Time is required")
                 return false
             }
+            currentState.currentLocation == null -> {
+                _uiState.value = currentState.copy(errorMessage = "Location is required. Please enable location access and try again.")
+                return false
+            }
         }
         return true
     }
@@ -174,6 +233,7 @@ class ChallengeViewModel : ViewModel() {
         }
 
         val currentState = _uiState.value
+        val location = currentState.currentLocation!!
 
         viewModelScope.launch {
             _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
@@ -186,7 +246,10 @@ class ChallengeViewModel : ViewModel() {
                 type = currentState.selectedMatchType,
                 date = Challenge.convertDisplayDateToIso(currentState.createSelectedDate),
                 time = Challenge.convertDisplayTimeToDatabase(currentState.createSelectedTime),
-                description = currentState.description.ifBlank { null }
+                description = currentState.description.ifBlank { null },
+                latitude = location.latitude,
+                longitude = location.longitude,
+                location_name = location.locationName
             )
 
             repository.createChallenge(challenge).fold(
@@ -199,6 +262,7 @@ class ChallengeViewModel : ViewModel() {
                     loadChallenges()
                 },
                 onFailure = { error ->
+                    Log.d("Create Challenge", "Failed to create challenge: ${error.message}")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = "Failed to create challenge: ${error.message}"
@@ -218,7 +282,8 @@ class ChallengeViewModel : ViewModel() {
             createSelectedTime = "",
             description = "",
             isCreateSuccess = false,
-            errorMessage = null
+            errorMessage = null,
+            currentLocation = null
         )
     }
 
@@ -265,5 +330,4 @@ class ChallengeViewModel : ViewModel() {
     fun updateDescription(description: String) {
         _uiState.value = _uiState.value.copy(description = description)
     }
-
 }
