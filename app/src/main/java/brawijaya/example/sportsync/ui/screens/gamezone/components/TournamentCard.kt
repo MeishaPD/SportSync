@@ -29,10 +29,10 @@ import brawijaya.example.sportsync.R
 
 @Composable
 fun TournamentCard(
-    team1Name: String = "Red Garuda",
-    team2Name: String = "Java Strikers",
-    date: String = "Sun, 02 Sep",
-    time: String = "14.00 PM",
+    team1Name: String,
+    team2Name: String,
+    date: String,
+    time: String,
     onClick: () -> Unit = {}
 ) {
     Card(
@@ -54,7 +54,6 @@ fun TournamentCard(
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically
