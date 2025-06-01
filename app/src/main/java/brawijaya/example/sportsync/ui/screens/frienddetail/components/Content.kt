@@ -42,7 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import brawijaya.example.sportsync.R
+import brawijaya.example.sportsync.data.models.DummyData
 import brawijaya.example.sportsync.ui.components.FriendListCard
+import brawijaya.example.sportsync.ui.components.LatestActivity
 import brawijaya.example.sportsync.ui.screens.frienddetail.FriendDetailScreen
 
 @Composable
@@ -227,17 +229,10 @@ fun FriendDetailContent() {
                 }
             }
         }
-
-        items(3) {
-            Spacer(Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(25.dp))
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .background(Color(0xFFFCCD78))
-            )
-            Spacer(Modifier.height(4.dp))
+        item {
+            DummyData.latestActivities.take(3).forEach { activity ->
+                LatestActivity(activity = activity)
+            }
         }
     }
 }
