@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.data.models.DummyData
-import brawijaya.example.sportsync.data.models.LatestActivity
 import brawijaya.example.sportsync.ui.components.LatestActivity
 import brawijaya.example.sportsync.ui.viewmodels.ProfileViewModel
 import java.time.LocalDateTime
