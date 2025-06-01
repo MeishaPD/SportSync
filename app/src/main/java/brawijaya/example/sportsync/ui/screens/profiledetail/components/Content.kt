@@ -23,10 +23,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,13 +38,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import brawijaya.example.sportsync.R
+import brawijaya.example.sportsync.data.models.DummyData
+import brawijaya.example.sportsync.data.models.UserProfile
+import brawijaya.example.sportsync.ui.components.LatestActivity
 import brawijaya.example.sportsync.ui.screens.profiledetail.ProfileDetailScreen
 
 @Composable
 fun ProfileDetailContent(
-    onViewAll: () -> Unit
+    userProfile: UserProfile,
+    onViewAll: () -> Unit,
+    onRefresh: () -> Unit = {}
 ) {
-    var progress by remember { mutableFloatStateOf(1450f / 2000f) }
+    val progress by remember(userProfile.xp, userProfile.level) {
+        derivedStateOf {
+            if (userProfile.level > 0) {
+                val baseXpPerLevel = 250
+                val xpForCurrentLevel = userProfile.level * baseXpPerLevel
+                val xpForNextLevel = (userProfile.level + 1) * baseXpPerLevel
+                val currentLevelProgress = (userProfile.xp - xpForCurrentLevel).toFloat()
+                val levelXpRange = (xpForNextLevel - xpForCurrentLevel).toFloat()
+
+                if (levelXpRange > 0) {
+                    (currentLevelProgress / levelXpRange).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+            } else {
+                0f
+            }
+        }
+    }
+
     val labelWidth = 120.dp
 
     LazyColumn(
@@ -61,7 +84,7 @@ fun ProfileDetailContent(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "Level 8",
+                        text = if (userProfile.level > 0) "Level ${userProfile.level}" else "Level 1",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -81,6 +104,13 @@ fun ProfileDetailContent(
                             trackColor = Color.Transparent
                         )
                     }
+
+                    Text(
+                        text = if (userProfile.xp > 0) "${userProfile.xp} XP" else "0 XP",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 }
 
                 Spacer(Modifier.size(8.dp))
@@ -118,7 +148,7 @@ fun ProfileDetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(labelWidth)
                         )
-                        Text(text = ": Julius Caesar")
+                        Text(text = ": ${userProfile.fullName.ifEmpty { "Not set" }}")
                     }
                     Row {
                         Text(
@@ -126,7 +156,7 @@ fun ProfileDetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(labelWidth)
                         )
-                        Text(text = ": 45")
+                        Text(text = ": ${if (userProfile.age > 0) userProfile.age else "Not set"}")
                     }
                     Row {
                         Text(
@@ -134,7 +164,7 @@ fun ProfileDetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(labelWidth)
                         )
-                        Text(text = ": Rome, Italy")
+                        Text(text = ": ${userProfile.address.ifEmpty { "Not set" }}")
                     }
                     Row {
                         Text(
@@ -142,7 +172,7 @@ fun ProfileDetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(labelWidth)
                         )
-                        Text(text = ": +39 123 4567")
+                        Text(text = ": ${userProfile.phone.ifEmpty { "Not set" }}")
                     }
                     Row {
                         Text(
@@ -150,7 +180,7 @@ fun ProfileDetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(labelWidth)
                         )
-                        Text(text = ": Gladiator Fights")
+                        Text(text = ": ${userProfile.favoriteSport.ifEmpty { "Not set" }}")
                     }
                     Row {
                         Text(
@@ -158,7 +188,95 @@ fun ProfileDetailContent(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.width(labelWidth)
                         )
-                        Text(text = ": 15")
+                        Text(text = ": ${userProfile.gamesPlayed}")
+                    }
+                    if (userProfile.rank.isNotEmpty()) {
+                        Row {
+                            Text(
+                                text = "Rank",
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.width(labelWidth)
+                            )
+                            Text(text = ": ${userProfile.rank}")
+                        }
+                    }
+                    if (userProfile.streak > 0) {
+                        Row {
+                            Text(
+                                text = "Streak",
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.width(labelWidth)
+                            )
+                            Text(text = ": ${userProfile.streak}")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Statistics Section
+        if (userProfile.wins > 0 || userProfile.losses > 0) {
+            item {
+                Text(
+                    text = "Statistics",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFE8F5E8),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${userProfile.wins}",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF4CAF50)
+                            )
+                            Text(
+                                text = "Wins",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${userProfile.losses}",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE57373)
+                            )
+                            Text(
+                                text = "Losses",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val winRate = if (userProfile.wins + userProfile.losses > 0) {
+                                (userProfile.wins.toFloat() / (userProfile.wins + userProfile.losses) * 100).toInt()
+                            } else 0
+                            Text(
+                                text = "$winRate%",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2196F3)
+                            )
+                            Text(
+                                text = "Win Rate",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
             }
@@ -168,34 +286,39 @@ fun ProfileDetailContent(
             Text(
                 text = "Latest Match",
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+                fontSize = 20.sp,
+                modifier = Modifier.padding(top = 16.dp)
             )
         }
 
-        items(3) {
-            Spacer(Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(25.dp))
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .background(Color(0xFFFCCD78))
-            )
-            Spacer(Modifier.height(4.dp))
+        item {
+            DummyData.latestActivities.take(3).forEach { activity ->
+                LatestActivity(activity = activity)
+            }
         }
 
         item {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Friend List",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
+                Column {
+                    Text(
+                        text = "Friend List",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                    if (userProfile.followersCount > 0 || userProfile.followingCount > 0) {
+                        Text(
+                            text = "Following: ${userProfile.followingCount} • Followers: ${userProfile.followersCount}",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
 
                 TextButton(
                     onClick = { onViewAll() },
@@ -224,34 +347,48 @@ fun ProfileDetailContent(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.rdj_profile),
-                        contentDescription = "RDJ Profile",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .size(60.dp)
-                    )
-                    Column {
-                        Text(
-                            text = "Robert Downey Jr.",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.rdj_profile),
+                            contentDescription = "Friend Profile",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .size(60.dp)
                         )
-                        Text(
-                            text = "robertdowneyjr@gmail.com",
-                            fontSize = 14.sp,
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Friend ${it + 1}",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "friend${it + 1}@example.com",
+                                fontSize = 14.sp,
+                            )
+                        }
                     }
+
                     Text(
-                        text = "Last Match, 28 Okt",
-                        fontSize = 10.sp
+                        text = "Online",
+                        fontSize = 12.sp,
+                        color = Color(0xFF4CAF50),
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .padding(end = 8.dp)
                     )
                 }
             }
         }
+
     }
 }
 

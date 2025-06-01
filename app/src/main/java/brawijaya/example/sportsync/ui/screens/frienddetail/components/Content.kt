@@ -1,6 +1,5 @@
 package brawijaya.example.sportsync.ui.screens.frienddetail.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -34,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import brawijaya.example.sportsync.R
+import brawijaya.example.sportsync.data.models.DummyData
 import brawijaya.example.sportsync.ui.components.FriendListCard
+import brawijaya.example.sportsync.ui.components.LatestActivity
 import brawijaya.example.sportsync.ui.screens.frienddetail.FriendDetailScreen
 
 @Composable
@@ -227,17 +226,10 @@ fun FriendDetailContent() {
                 }
             }
         }
-
-        items(3) {
-            Spacer(Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(25.dp))
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .background(Color(0xFFFCCD78))
-            )
-            Spacer(Modifier.height(4.dp))
+        item {
+            DummyData.latestActivities.take(3).forEach { activity ->
+                LatestActivity(activity = activity)
+            }
         }
     }
 }

@@ -24,16 +24,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import brawijaya.example.sportsync.R
 import brawijaya.example.sportsync.ui.components.BottomNavigation
 import brawijaya.example.sportsync.ui.navigation.Screen
 import brawijaya.example.sportsync.ui.screens.profile.components.ProfileContent
+import brawijaya.example.sportsync.ui.viewmodels.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navController: NavController
+    navController: NavController,
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     Scaffold(
         topBar = {
@@ -92,13 +95,13 @@ fun ProfileScreen(
                 }
             )
         }
-        ) { innerPadding ->
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            ProfileContent()
+            ProfileContent(profileViewModel = profileViewModel)
         }
     }
 }

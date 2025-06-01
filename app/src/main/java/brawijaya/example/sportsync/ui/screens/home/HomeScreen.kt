@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,8 +18,9 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,22 +34,31 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import brawijaya.example.sportsync.R
+import brawijaya.example.sportsync.data.models.DummyData
+import brawijaya.example.sportsync.data.models.ProfileState
 import brawijaya.example.sportsync.ui.components.BottomNavigation
+import brawijaya.example.sportsync.ui.components.LatestActivity
 import brawijaya.example.sportsync.ui.navigation.Screen
+import brawijaya.example.sportsync.ui.screens.home.components.BigUpcomingEventsCard
+import brawijaya.example.sportsync.ui.screens.home.components.DailyQuestCard
+import brawijaya.example.sportsync.ui.screens.home.components.MainUpcomingEventsCard
+import brawijaya.example.sportsync.ui.viewmodels.ProfileViewModel
 import brawijaya.example.sportsync.utils.LocationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController
+    navController: NavController,
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val profileState by profileViewModel.profileState.collectAsState()
+
     var showUpComingEvents by remember { mutableStateOf(false) }
     var hasLocationPermission by remember { mutableStateOf(false) }
     var hasCheckedPermission by remember { mutableStateOf(false) }
@@ -110,7 +121,7 @@ fun HomeScreen(
                     title = {
                         Column {
                             Text(
-                                text = "Hello,\nJulius Caesar",
+                                text = "Hello,\n${profileState.profile.fullName.ifEmpty { "User" }}",
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -153,6 +164,7 @@ fun HomeScreen(
                 .padding(innerPadding)
         ) {
             HomeScreenContent(
+                profileState = profileState,
                 showUpComingEvents = showUpComingEvents,
                 onToggleShowUpComingEvents = { showUpComingEvents = !showUpComingEvents }
             )
@@ -162,11 +174,41 @@ fun HomeScreen(
 
 @Composable
 fun HomeScreenContent(
+    profileState: ProfileState,
     showUpComingEvents: Boolean,
     onToggleShowUpComingEvents: () -> Unit
 ) {
+    val userProfile = profileState.profile
 
-    var progress by remember { mutableFloatStateOf(1450f / 2000f) }
+    val progress by remember(userProfile.xp, userProfile.level) {
+        derivedStateOf {
+            if (userProfile.level > 0) {
+                val baseXpPerLevel = 250
+                val xpForCurrentLevel = userProfile.level * baseXpPerLevel
+                val xpForNextLevel = (userProfile.level + 1) * baseXpPerLevel
+                val currentLevelProgress = (userProfile.xp - xpForCurrentLevel).toFloat()
+                val levelXpRange = (xpForNextLevel - xpForCurrentLevel).toFloat()
+
+                if (levelXpRange > 0) {
+                    (currentLevelProgress / levelXpRange).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+            } else {
+                0f
+            }
+        }
+    }
+
+    if (profileState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     Column(
         modifier = Modifier.padding(vertical = 24.dp)
@@ -178,7 +220,7 @@ fun HomeScreenContent(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Level 8",
+                    text = "Level ${userProfile.level}",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -198,6 +240,13 @@ fun HomeScreenContent(
                         trackColor = Color.Transparent
                     )
                 }
+
+                Text(
+                    text = if (userProfile.xp > 0) "${userProfile.xp} XP" else "0 XP",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
 
             Spacer(Modifier.size(8.dp))
@@ -219,7 +268,6 @@ fun HomeScreenContent(
                 showUpComingEvents = onToggleShowUpComingEvents
             )
         }
-
     }
 }
 
@@ -252,15 +300,8 @@ fun UpComingEventsContent(
         LazyColumn(
             modifier = Modifier.padding(14.dp)
         ) {
-            items(7) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(25.dp))
-                        .width(315.dp)
-                        .height(105.dp)
-                        .background(Color.Gray)
-                )
-                Spacer(Modifier.size(16.dp))
+            items(DummyData.upcomingEvents) { event ->
+                BigUpcomingEventsCard(event = event)
             }
         }
     }
@@ -281,17 +322,8 @@ fun MainHomeScreenContent(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 24.dp)
     ) {
-        item {
-            repeat(5) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(Color.Gray)
-                        .height(80.dp)
-                        .width(315.dp)
-                )
-                Spacer(Modifier.size(8.dp))
-            }
+        items(DummyData.dailyQuests) { quest ->
+            DailyQuestCard(quest = quest)
         }
     }
 
@@ -336,17 +368,8 @@ fun MainHomeScreenContent(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 24.dp)
     ) {
-        item {
-            repeat(5) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(Color.Gray)
-                        .height(120.dp)
-                        .width(205.dp)
-                )
-                Spacer(Modifier.size(8.dp))
-            }
+        items(DummyData.upcomingEvents.take(5)) { event ->
+            MainUpcomingEventsCard(event = event)
         }
     }
 
@@ -356,27 +379,13 @@ fun MainHomeScreenContent(
             .padding(top = 28.dp)
     ) {
         Text(
-            text = "Latest Activites",
+            text = "Latest Activities",
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        repeat(3) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(45.dp)
-                    .clip(RoundedCornerShape(25.dp))
-                    .background(Color.Gray)
-            )
-            Spacer(Modifier.height(8.dp))
+        DummyData.latestActivities.take(3).forEach { activity ->
+            LatestActivity(activity = activity)
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    val navController = rememberNavController()
-    HomeScreen(navController = navController)
 }
